@@ -1,0 +1,14 @@
+# *
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /auth/
+Disallow: /dashboard/
+Disallow: /*/new
+Disallow: /analytics
+
+# Host
+Host: https://bibliotheque-cameroun.vercel.app
+
+# Sitemaps
+Sitemap: https://bibliotheque-cameroun.vercel.app/sitemap.xml

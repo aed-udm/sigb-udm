@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:mobile="http://www.google.com/schemas/sitemap-mobile/1.0" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+<url><loc>https://bibliotheque-cameroun.vercel.app/admin/import</loc><lastmod>2025-09-05T07:54:56.848Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://bibliotheque-cameroun.vercel.app/admin/test-standards</loc><lastmod>2025-09-05T07:54:56.849Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://bibliotheque-cameroun.vercel.app/archives/diplomes</loc><lastmod>2025-09-05T07:54:56.849Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://bibliotheque-cameroun.vercel.app/admin/cooperation</loc><lastmod>2025-09-05T07:54:56.849Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://bibliotheque-cameroun.vercel.app/admin/penalties</loc><lastmod>2025-09-05T07:54:56.849Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://bibliotheque-cameroun.vercel.app/admin/compliance</loc><lastmod>2025-09-05T07:54:56.849Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://bibliotheque-cameroun.vercel.app/books</loc><lastmod>2025-09-05T07:54:56.849Z</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+<url><loc>https://bibliotheque-cameroun.vercel.app/catalog</loc><lastmod>2025-09-05T07:54:56.849Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://bibliotheque-cameroun.vercel.app/archives</loc><lastmod>2025-09-05T07:54:56.849Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://bibliotheque-cameroun.vercel.app/dashboard</loc><lastmod>2025-09-05T07:54:56.849Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://bibliotheque-cameroun.vercel.app/profile</loc><lastmod>2025-09-05T07:54:56.849Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://bibliotheque-cameroun.vercel.app/loans</loc><lastmod>2025-09-05T07:54:56.849Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://bibliotheque-cameroun.vercel.app</loc><lastmod>2025-09-05T07:54:56.849Z</lastmod><changefreq>daily</changefreq><priority>1</priority></url>
+<url><loc>https://bibliotheque-cameroun.vercel.app/reservations</loc><lastmod>2025-09-05T07:54:56.849Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://bibliotheque-cameroun.vercel.app/reservations/new</loc><lastmod>2025-09-05T07:54:56.849Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://bibliotheque-cameroun.vercel.app/search/advanced</loc><lastmod>2025-09-05T07:54:56.849Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://bibliotheque-cameroun.vercel.app/settings/roles</loc><lastmod>2025-09-05T07:54:56.849Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://bibliotheque-cameroun.vercel.app/test-udm-colors</loc><lastmod>2025-09-05T07:54:56.849Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://bibliotheque-cameroun.vercel.app/theses</loc><lastmod>2025-09-05T07:54:56.849Z</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+<url><loc>https://bibliotheque-cameroun.vercel.app/settings</loc><lastmod>2025-09-05T07:54:56.849Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://bibliotheque-cameroun.vercel.app/users</loc><lastmod>2025-09-05T07:54:56.849Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://bibliotheque-cameroun.vercel.app/admin/ad-sync</loc><lastmod>2025-09-05T07:54:56.849Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://bibliotheque-cameroun.vercel.app/admin/standards-monitoring</loc><lastmod>2025-09-05T07:54:56.849Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://bibliotheque-cameroun.vercel.app/admin/standards</loc><lastmod>2025-09-05T07:54:56.849Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+</urlset>

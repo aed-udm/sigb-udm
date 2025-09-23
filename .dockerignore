@@ -1,0 +1,136 @@
+# ================================
+# DOCKERIGNORE OPTIMISÉ SIGB UdM
+# ================================
+
+# Dépendances Node.js
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build Next.js
+.next/
+out/
+
+# Fichiers de développement
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Cache
+.npm
+.eslintcache
+.cache/
+.parcel-cache
+
+# Fichiers temporaires
+.tmp/
+.temp/
+*.tmp
+*.temp
+
+# Fichiers de test
+__tests__/
+*.test.js
+*.test.ts
+*.test.tsx
+*.spec.js
+*.spec.ts
+*.spec.tsx
+coverage/
+.nyc_output
+
+# Documentation de développement
+docs/
+*.md
+!README.md
+
+# Scripts de développement
+scripts/test*
+scripts/debug*
+scripts/dev*
+
+# Fichiers de configuration IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+*.pid
+*.seed
+*.pid.lock
+
+# Fichiers Git
+.git/
+.gitignore
+.gitattributes
+
+# Fichiers de sauvegarde
+*.bak
+*.backup
+*.old
+
+# Fichiers de configuration locale
+.env.example
+docker-compose.yml
+docker-compose.*.yml
+
+# Fichiers de build temporaires
+*.tsbuildinfo
+.turbo/
+
+# Uploads de développement (garder la structure)
+public/uploads/*
+!public/uploads/.gitkeep
+
+# Fichiers de monitoring
+.kiro/
+
+# Fichiers de nettoyage
+NETTOYAGE_*
+
+# Certificats et clés (sécurité)
+*.pem
+*.key
+*.crt
+*.p12
+
+# Fichiers de base de données locale
+*.db
+*.sqlite
+*.sqlite3
+
+# Fichiers de configuration serveur
+vercel.json
+netlify.toml
+
+# Fichiers de linting
+.eslintrc*
+.prettierrc*
+
+# Fichiers TypeScript de configuration
+tsconfig.json
+!tsconfig.json
+
+# Fichiers de configuration Tailwind
+tailwind.config.*
+!tailwind.config.ts
+
+# Fichiers de configuration PostCSS
+postcss.config.*
+
+# Fichiers de configuration ESLint
+eslint.config.*

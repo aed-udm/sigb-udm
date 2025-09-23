@@ -1,0 +1,1362 @@
+@import "tailwindcss";
+@import "../styles/glassmorphism.css";
+
+/* Overlay avec effet de flou pour les dialogs - fond noir transparent avec flou intense */
+[data-radix-dialog-overlay],
+.fixed.inset-0.z-50.bg-black\/80,
+[data-state="open"][class*="bg-black"] {
+  background: rgba(0, 0, 0, 0.3) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+}
+
+/* Mode sombre - effet de flou avec teinte noire plus prononcée */
+.dark [data-radix-dialog-overlay],
+.dark .fixed.inset-0.z-50.bg-black\/80,
+.dark [data-state="open"][class*="bg-black"] {
+  background: rgba(0, 0, 0, 0.4) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+}
+
+/* Configuration des polices avec fallbacks robustes */
+:root {
+  --font-sans-fallback: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono-fallback: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', 'Courier New', monospace;
+}
+
+/* Optimisation du rendu des polices */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: var(--font-sans), var(--font-sans-fallback);
+  font-feature-settings: "rlig" 1, "calt" 1;
+}
+
+/* Fallbacks automatiques pour les classes Tailwind */
+.font-sans {
+  font-family: var(--font-sans), var(--font-sans-fallback);
+}
+
+.font-mono {
+  font-family: var(--font-mono), var(--font-mono-fallback);
+}
+
+/* Classes utilitaires pour forcer les polices système */
+.font-system {
+  font-family: var(--font-sans-fallback) !important;
+}
+
+.font-system-mono {
+  font-family: var(--font-mono-fallback) !important;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3b82f6;
+}
+
+
+
+/* Responsive utilities */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Mobile-first responsive text */
+@media (max-width: 640px) {
+  .text-responsive {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+}
+
+/* Smooth transitions for mobile interactions */
+@media (max-width: 768px) {
+  .mobile-touch {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  .mobile-touch:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+  }
+}
+
+/* Better focus states for accessibility */
+.focus-visible:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Responsive container padding */
+.container-responsive {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .container-responsive {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-responsive {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+/* Glassmorphism enhancements */
+.glass-nav {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dark .glass-nav {
+  background: rgba(17, 24, 39, 0.95);
+  border: 1px solid rgba(75, 85, 99, 0.2);
+}
+
+.glass-enhanced {
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-enhanced::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.05) 50%,
+    rgba(255, 255, 255, 0.1) 100%
+  );
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* Smooth glassmorphism animations */
+.glass-smooth {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-smooth:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* Amélioration de la lisibilité des boutons */
+.btn-enhanced {
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-enhanced::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s;
+}
+
+.btn-enhanced:hover::before {
+  left: 100%;
+}
+
+/* Contraste amélioré pour les textes */
+.text-enhanced {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.text-enhanced-dark {
+  text-shadow: 0 1px 3px rgba(255, 255, 255, 0.1);
+}
+
+/* Amélioration du mode sombre global */
+.dark {
+  color-scheme: dark;
+}
+
+/* Textes plus visibles en mode sombre */
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+  color: rgb(243, 244, 246) !important;
+  font-weight: 600;
+}
+
+.dark p, .dark span, .dark div {
+  color: rgb(209, 213, 219);
+}
+
+.dark .text-gray-600 {
+  color: rgb(156, 163, 175) !important;
+}
+
+.dark .text-gray-700 {
+  color: rgb(209, 213, 219) !important;
+}
+
+.dark .text-gray-800 {
+  color: rgb(243, 244, 246) !important;
+}
+
+.dark .text-gray-900 {
+  color: rgb(255, 255, 255) !important;
+}
+
+/* Amélioration des cartes en mode sombre */
+.dark .bg-white {
+  background-color: rgb(31, 41, 55) !important;
+}
+
+.dark .bg-gray-50 {
+  background-color: rgb(17, 24, 39) !important;
+}
+
+.dark .bg-gray-100 {
+  background-color: rgb(31, 41, 55) !important;
+}
+
+/* Bordures plus visibles en mode sombre */
+.dark .border-gray-200 {
+  border-color: rgb(75, 85, 99) !important;
+}
+
+.dark .border-gray-300 {
+  border-color: rgb(107, 114, 128) !important;
+}
+
+/* Amélioration spécifique pour la page publique en mode sombre */
+.dark .bg-gradient-to-br {
+  background: linear-gradient(to bottom right, rgb(17, 24, 39), rgb(31, 41, 55), rgb(55, 65, 81)) !important;
+}
+
+/* Amélioration des cartes glassmorphism en mode sombre */
+.dark .bg-white\/90 {
+  background-color: rgba(31, 41, 55, 0.95) !important;
+  border-color: rgba(75, 85, 99, 0.3) !important;
+}
+
+.dark .bg-gray-800\/90 {
+  background-color: rgba(17, 24, 39, 0.95) !important;
+  border-color: rgba(75, 85, 99, 0.3) !important;
+}
+
+/* Amélioration des textes sur fond glassmorphism */
+.dark .backdrop-blur-sm {
+  backdrop-filter: blur(8px) brightness(1.1);
+  -webkit-backdrop-filter: blur(8px) brightness(1.1);
+}
+
+/* Contraste amélioré pour les gradients de texte en mode sombre */
+.dark .bg-clip-text.text-transparent {
+  background-image: linear-gradient(to right, rgb(255, 255, 255), rgb(134, 239, 172), rgb(255, 255, 255)) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+}
+
+/* Fix pour la troncature des lettres avec jambages dans bg-clip-text */
+.bg-clip-text.text-transparent {
+  line-height: 1.3 !important;
+  padding-bottom: 0.25rem !important;
+  overflow: visible !important;
+  display: inline-block !important;
+}
+
+/* Amélioration des ombres de texte en mode sombre */
+.dark h1, .dark h2, .dark h3 {
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Amélioration des boutons en mode sombre */
+.dark .text-green-700 {
+  color: rgb(74, 222, 128) !important;
+}
+
+.dark .text-green-800 {
+  color: rgb(134, 239, 172) !important;
+}
+
+/* Amélioration spécifique des statistiques en mode sombre */
+.dark .text-green-600 {
+  color: rgb(74, 222, 128) !important;
+}
+
+.dark .text-green-600 {
+  color: rgb(134, 239, 172) !important;
+}
+
+.dark .text-yellow-600 {
+  color: rgb(253, 224, 71) !important;
+}
+
+.dark .text-red-600 {
+  color: rgb(252, 165, 165) !important; /* Plus clair pour meilleur contraste */
+}
+
+.dark .text-gray-600 {
+  color: rgb(156, 163, 175) !important; /* Gris clair UdM pour meilleur contraste */
+}
+
+/* Amélioration du contraste pour les textes secondaires */
+.dark .text-gray-600 {
+  color: rgb(156, 163, 175) !important; /* Plus clair pour meilleur contraste */
+}
+
+.dark .text-gray-300 {
+  color: rgb(209, 213, 219) !important; /* Plus clair pour meilleur contraste */
+}
+
+.dark .text-gray-400 {
+  color: rgb(156, 163, 175) !important; /* Plus clair pour meilleur contraste */
+}
+
+/* Amélioration des cartes de statistiques */
+.dark .bg-gray-800\/98 {
+  background-color: rgba(31, 41, 55, 0.98) !important;
+  border-color: rgba(75, 85, 99, 0.5) !important;
+}
+
+/* Amélioration de l'opacité des icônes en mode sombre */
+.dark .opacity-40 {
+  opacity: 0.7 !important;
+}
+
+/* ===== AMÉLIORATIONS DES EFFETS DE SURVOL EN MODE SOMBRE ===== */
+
+/* Amélioration des cartes de statistiques en mode sombre */
+.dark .bg-white\/90 {
+  background-color: rgba(31, 41, 55, 0.95) !important;
+  border-color: rgba(75, 85, 99, 0.3) !important;
+}
+
+.dark .bg-white\/95 {
+  background-color: rgba(31, 41, 55, 0.98) !important;
+  border-color: rgba(75, 85, 99, 0.3) !important;
+}
+
+.dark .bg-gray-800\/90 {
+  background-color: rgba(17, 24, 39, 0.95) !important;
+  border-color: rgba(75, 85, 99, 0.3) !important;
+}
+
+.dark .bg-gray-800\/95 {
+  background-color: rgba(17, 24, 39, 0.98) !important;
+  border-color: rgba(75, 85, 99, 0.3) !important;
+}
+
+/* Amélioration des effets de survol pour les cartes */
+.dark .hover\:shadow-lg:hover {
+  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2) !important;
+}
+
+.dark .hover\:shadow-xl:hover {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark .hover\:shadow-2xl:hover {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Amélioration des boutons au survol */
+.dark .hover\:bg-green-50:hover {
+  background-color: rgba(30, 58, 138, 0.4) !important;
+}
+
+.dark .hover\:bg-green-900\/20:hover {
+  background-color: rgba(30, 58, 138, 0.4) !important;
+}
+
+/* Amélioration des boutons verts au survol en mode sombre */
+.dark .hover\:bg-green-50:hover {
+  background-color: rgba(21, 128, 61, 0.4) !important;
+}
+
+.dark .hover\:bg-green-900\/20:hover {
+  background-color: rgba(21, 128, 61, 0.4) !important;
+}
+
+/* Amélioration des boutons rouges au survol en mode sombre */
+.dark .hover\:bg-red-50:hover {
+  background-color: rgba(185, 28, 28, 0.4) !important;
+}
+
+.dark .hover\:bg-red-900\/20:hover {
+  background-color: rgba(185, 28, 28, 0.4) !important;
+}
+
+/* Amélioration des boutons ghost au survol en mode sombre */
+.dark .hover\:bg-gray-100\/80:hover {
+  background-color: rgba(55, 65, 81, 0.8) !important;
+}
+
+.dark .hover\:bg-gray-800\/80:hover {
+  background-color: rgba(55, 65, 81, 0.8) !important;
+}
+
+.dark .hover\:bg-gray-50:hover {
+  background-color: rgba(55, 65, 81, 0.6) !important;
+}
+
+.dark .hover\:bg-gray-800\/50:hover {
+  background-color: rgba(31, 41, 55, 0.8) !important;
+}
+
+.dark .hover\:border-green-300:hover {
+  border-color: rgb(74, 222, 128) !important;
+}
+
+.dark .hover\:text-green-200:hover {
+  color: rgb(134, 239, 172) !important;
+}
+
+/* Amélioration des cartes au survol */
+.dark .hover\:shadow-xl:hover {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.1) !important;
+}
+
+.dark .hover\:shadow-3xl:hover {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Amélioration des effets de brillance au survol */
+.dark .group:hover .group-hover\:opacity-100 {
+  opacity: 1 !important;
+}
+
+/* Amélioration des transitions de couleur au survol */
+.dark .group-hover\:text-green-400 {
+  transition: color 0.3s ease !important;
+}
+
+.dark .group:hover .group-hover\:text-green-400 {
+  color: rgb(134, 239, 172) !important;
+}
+
+/* Amélioration des bordures au survol */
+.dark .hover\:border-green-600:hover {
+  border-color: rgb(134, 239, 172) !important;
+}
+
+/* Amélioration des backgrounds avec opacité au survol */
+.dark .hover\:bg-green-500\/30:hover {
+  background-color: rgba(34, 197, 94, 0.5) !important;
+}
+
+.dark .hover\:bg-green-500\/40:hover {
+  background-color: rgba(34, 197, 94, 0.5) !important;
+}
+
+/* Amélioration des textes au survol */
+.dark .hover\:text-green-800:hover {
+  color: rgb(134, 239, 172) !important;
+}
+
+.dark .hover\:text-green-100:hover {
+  color: rgb(187, 247, 208) !important;
+}
+
+/* ===== AMÉLIORATIONS SIDEBAR EN MODE SOMBRE ===== */
+
+/* Amélioration des éléments de navigation de la sidebar */
+.dark .text-gray-700 {
+  color: rgb(209, 213, 219) !important; /* Plus clair pour meilleur contraste */
+}
+
+.dark .hover\:bg-gray-100:hover {
+  background-color: rgba(55, 65, 81, 0.8) !important; /* Plus sombre et visible */
+  backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(75, 85, 99, 0.3) !important;
+}
+
+.dark .hover\:text-gray-900:hover {
+  color: rgb(243, 244, 246) !important; /* Blanc cassé pour excellent contraste */
+}
+
+.dark .dark\:text-gray-300 {
+  color: rgb(209, 213, 219) !important; /* Plus clair */
+}
+
+.dark .dark\:hover\:bg-gray-800\/50:hover {
+  background-color: rgba(31, 41, 55, 0.9) !important; /* Plus opaque */
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(75, 85, 99, 0.4) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  transform: translateX(4px) !important; /* Léger décalage vers la droite */
+}
+
+.dark .dark\:hover\:text-white:hover {
+  color: rgb(255, 255, 255) !important; /* Blanc pur */
+}
+
+/* Amélioration des tooltips de la sidebar */
+.dark .bg-gray-900 {
+  background-color: rgba(17, 24, 39, 0.95) !important;
+  backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(75, 85, 99, 0.4) !important;
+}
+
+/* Amélioration des badges dans la sidebar */
+.dark .bg-red-500 {
+  background-color: rgb(239, 68, 68) !important;
+}
+
+.dark .bg-orange-500 {
+  background-color: rgb(249, 115, 22) !important;
+}
+
+.dark .bg-green-500 {
+  background-color: rgb(34, 197, 94) !important;
+}
+
+.dark .bg-yellow-500 {
+  background-color: rgb(234, 179, 8) !important;
+}
+
+.dark .bg-green-500 {
+  background-color: rgb(34, 197, 94) !important;
+}
+
+/* Amélioration des effets de transition pour la sidebar */
+.dark nav a {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* ===== AMÉLIORATION DES BADGES EN MODE SOMBRE ===== */
+
+/* ===== BADGES "INACTIF" SPÉCIFIQUES - SANS AFFECTER LA SIDEBAR ===== */
+
+/* Badge "Inactif" - Sélecteurs spécifiques aux badges uniquement */
+.dark .inline-flex.bg-gray-100,
+.dark .inline-flex.bg-gray-200,
+.dark .inline-flex.bg-gray-300,
+.dark span.bg-gray-100,
+.dark span.bg-gray-200,
+.dark span.bg-gray-300 {
+  background-color: rgba(55, 65, 81, 1) !important; /* Gris sombre solide */
+  color: rgba(243, 244, 246, 1) !important; /* Texte blanc cassé */
+  border: 1px solid rgba(107, 114, 128, 0.8) !important; /* Bordure gris moyen */
+}
+
+/* Texte des badges "Inactif" */
+.dark .inline-flex .text-gray-800,
+.dark span .text-gray-800,
+.dark .inline-flex.text-gray-800,
+.dark span.text-gray-800 {
+  color: rgba(243, 244, 246, 1) !important; /* Texte blanc cassé pour badges */
+}
+
+/* ===== DESIGN MODERNE POUR LES TABS - OPTION 1 ===== */
+
+/* Container des tabs avec fond glassmorphism */
+.modern-tabs {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  border-radius: 0.75rem;
+  padding: 0.25rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(229, 231, 235, 0.5);
+  animation: slideIn 0.3s ease-out;
+}
+
+.dark .modern-tabs {
+  background-color: rgba(31, 41, 55, 0.8);
+  border-color: rgba(75, 85, 99, 0.5);
+}
+
+/* Tabs individuels */
+.modern-tab {
+  position: relative;
+  flex: 1;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  text-align: center;
+  color: rgb(75, 85, 99);
+}
+
+.dark .modern-tab {
+  color: rgb(156, 163, 175);
+}
+
+/* Hover state */
+.modern-tab:hover:not(.active) {
+  color: rgb(17, 24, 39);
+  background-color: rgba(243, 244, 246, 0.5);
+  transform: translateY(-0.5px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.dark .modern-tab:hover:not(.active) {
+  color: rgb(255, 255, 255);
+  background-color: rgba(75, 85, 99, 0.5);
+}
+
+/* Tab actif */
+.modern-tab.active {
+  color: white;
+  background: linear-gradient(to right, rgb(34, 197, 94), rgb(22, 163, 74));
+  box-shadow: 0 10px 15px -3px rgba(34, 197, 94, 0.25), 0 4px 6px -2px rgba(34, 197, 94, 0.05);
+  transform: translateY(-1px);
+}
+
+.dark .modern-tab.active {
+  box-shadow: 0 10px 15px -3px rgba(34, 197, 94, 0.4), 0 4px 6px -2px rgba(34, 197, 94, 0.1);
+}
+
+/* Animation d'entrée */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Badge "Bientôt" plus visible en mode sombre */
+.dark .bg-yellow-100 {
+  background-color: rgba(180, 83, 9, 0.9) !important; /* Orange/jaune plus foncé */
+  color: rgba(254, 240, 138, 0.95) !important; /* Texte jaune clair */
+  border: 1px solid rgba(217, 119, 6, 0.7) !important; /* Bordure orange */
+}
+
+.dark .text-yellow-800 {
+  color: rgba(254, 240, 138, 0.95) !important; /* Texte jaune clair */
+}
+
+/* Badge "Actif" amélioré en mode sombre */
+.dark .bg-green-100 {
+  background-color: rgba(30, 58, 138, 0.9) !important; /* Bleu plus visible */
+  color: rgba(219, 234, 254, 0.95) !important; /* Texte bleu clair */
+  border: 1px solid rgba(34, 197, 94, 0.6) !important; /* Bordure bleue */
+}
+
+.dark .text-green-800 {
+  color: rgba(219, 234, 254, 0.95) !important; /* Texte bleu clair */
+}
+
+.dark nav a:hover {
+  transform: translateX(4px) scale(1.02) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Amélioration spécifique pour les éléments interactifs */
+.dark button:hover,
+.dark .hover\:scale-105:hover {
+  transform: scale(1.05) !important;
+  transition: all 0.2s ease !important;
+}
+
+/* ===== AMÉLIORATIONS DES BADGES EN MODE SOMBRE ===== */
+
+/* Variables CSS pour badges de statut de documents - Mode clair */
+:root {
+  --badge-borrowed-bg: rgb(254 215 170); /* orange-200 */
+  --badge-borrowed-text: rgb(154 52 18); /* orange-800 */
+  --badge-borrowed-border: rgb(253 186 116); /* orange-300 */
+
+  --badge-reserved-bg: rgb(254 240 138); /* yellow-200 */
+  --badge-reserved-text: rgb(133 77 14); /* yellow-800 */
+  --badge-reserved-border: rgb(250 204 21); /* yellow-400 */
+}
+
+/* Variables CSS pour badges de statut de documents - Mode sombre */
+.dark {
+  --badge-borrowed-bg: rgb(154 52 18); /* orange-800 pour fond sombre */
+  --badge-borrowed-text: rgb(254 215 170); /* orange-200 pour texte clair */
+  --badge-borrowed-border: rgb(194 65 12); /* orange-700 pour bordure */
+
+  --badge-reserved-bg: rgb(133 77 14); /* yellow-800 pour fond sombre */
+  --badge-reserved-text: rgb(254 240 138); /* yellow-200 pour texte clair */
+  --badge-reserved-border: rgb(161 98 7); /* yellow-700 pour bordure */
+}
+
+/* Amélioration des badges de rôles pour meilleur contraste */
+.dark .bg-red-100 {
+  background-color: rgba(185, 28, 28, 0.8) !important; /* Rouge plus sombre */
+}
+
+.dark .text-red-800 {
+  color: rgb(254, 202, 202) !important; /* Texte rouge plus clair */
+}
+
+.dark .border-red-200 {
+  border-color: rgba(220, 38, 38, 0.6) !important;
+}
+
+.dark .bg-green-100 {
+  background-color: rgba(30, 64, 175, 0.8) !important; /* Bleu plus sombre */
+}
+
+.dark .text-green-800 {
+  color: rgb(134, 239, 172) !important; /* Texte bleu plus clair */
+}
+
+.dark .border-green-200 {
+  border-color: rgba(34, 197, 94, 0.6) !important;
+}
+
+.dark .bg-green-100 {
+  background-color: rgba(21, 128, 61, 0.8) !important; /* Vert plus sombre */
+}
+
+.dark .text-green-800 {
+  color: rgb(187, 247, 208) !important; /* Texte vert plus clair */
+}
+
+.dark .border-green-200 {
+  border-color: rgba(34, 197, 94, 0.6) !important;
+}
+
+.dark .bg-gray-100 {
+  background-color: rgba(55, 65, 81, 0.8) !important; /* Gris sombre UdM */
+}
+
+.dark .text-gray-800 {
+  color: rgb(229, 231, 235) !important; /* Texte gris clair UdM */
+}
+
+.dark .border-gray-200 {
+  border-color: rgba(147, 51, 234, 0.6) !important;
+}
+
+.dark .bg-gray-100 {
+  background-color: rgba(55, 65, 81, 0.8) !important; /* Gris plus sombre */
+}
+
+.dark .text-gray-800 {
+  color: rgb(229, 231, 235) !important; /* Texte gris plus clair */
+}
+
+.dark .border-gray-200 {
+  border-color: rgba(75, 85, 99, 0.6) !important;
+}
+
+/* Amélioration des badges avec opacité */
+.dark .bg-red-900\/20 {
+  background-color: rgba(127, 29, 29, 0.9) !important; /* Plus opaque */
+}
+
+.dark .dark\:text-red-300 {
+  color: rgb(252, 165, 165) !important; /* Plus clair */
+}
+
+.dark .dark\:border-red-800 {
+  border-color: rgba(185, 28, 28, 0.8) !important;
+}
+
+.dark .bg-green-900\/20 {
+  background-color: rgba(30, 58, 138, 0.9) !important; /* Plus opaque */
+}
+
+.dark .dark\:text-green-300 {
+  color: rgb(74, 222, 128) !important; /* Plus clair */
+}
+
+.dark .dark\:border-green-800 {
+  border-color: rgba(30, 64, 175, 0.8) !important;
+}
+
+.dark .bg-green-900\/20 {
+  background-color: rgba(20, 83, 45, 0.9) !important; /* Plus opaque */
+}
+
+.dark .dark\:text-green-300 {
+  color: rgb(134, 239, 172) !important; /* Plus clair */
+}
+
+.dark .dark\:border-green-800 {
+  border-color: rgba(21, 128, 61, 0.8) !important;
+}
+
+.dark .bg-gray-900\/20 {
+  background-color: rgba(88, 28, 135, 0.9) !important; /* Plus opaque */
+}
+
+.dark .dark\:text-gray-300 {
+  color: rgb(209, 213, 219) !important; /* Gris clair UdM */
+}
+
+.dark .dark\:border-gray-800 {
+  border-color: rgba(55, 65, 81, 0.8) !important;
+}
+
+.dark .bg-gray-900\/20 {
+  background-color: rgba(31, 41, 55, 0.9) !important; /* Plus opaque */
+}
+
+.dark .dark\:text-gray-300 {
+  color: rgb(209, 213, 219) !important; /* Plus clair */
+}
+
+.dark .dark\:border-gray-800 {
+  border-color: rgba(55, 65, 81, 0.8) !important;
+}
+
+/* ===== AMÉLIORATION DES CARTES D'AGENTS EN MODE SOMBRE ===== */
+
+/* Amélioration des icônes d'agents pour meilleur contraste */
+.dark .bg-red-100 {
+  background-color: rgba(127, 29, 29, 0.4) !important; /* Rouge sombre avec transparence */
+}
+
+.dark .bg-green-100 {
+  background-color: rgba(30, 58, 138, 0.4) !important; /* Bleu sombre avec transparence */
+}
+
+.dark .bg-green-100 {
+  background-color: rgba(20, 83, 45, 0.4) !important; /* Vert sombre avec transparence */
+}
+
+.dark .bg-gray-100 {
+  background-color: rgba(55, 65, 81, 0.4) !important; /* Gris sombre UdM avec transparence */
+}
+
+/* Amélioration des cartes d'agents avec hover */
+.dark .hover\:bg-gray-800\/50:hover {
+  background-color: rgba(31, 41, 55, 0.7) !important; /* Hover plus visible */
+}
+
+/* Amélioration des bordures des cartes */
+.dark .border-gray-700 {
+  border-color: rgba(75, 85, 99, 0.8) !important; /* Bordure plus visible */
+}
+
+/* ===== AMÉLIORATION DES CARTES DE STATISTIQUES EN MODE SOMBRE ===== */
+
+/* Amélioration des arrière-plans des cartes de statistiques */
+.dark .bg-green-100 {
+  background-color: rgba(20, 83, 45, 0.3) !important; /* Vert sombre avec transparence */
+}
+
+.dark .bg-red-100 {
+  background-color: rgba(127, 29, 29, 0.3) !important; /* Rouge sombre avec transparence */
+}
+
+.dark .bg-gray-100 {
+  background-color: rgba(55, 65, 81, 0.3) !important; /* Gris sombre UdM avec transparence */
+}
+
+/* Amélioration des couleurs de texte pour les statistiques */
+.dark .text-green-600 {
+  color: rgb(134, 239, 172) !important; /* Vert plus clair */
+}
+
+.dark .text-red-600 {
+  color: rgb(252, 165, 165) !important; /* Rouge plus clair */
+}
+
+.dark .text-gray-600 {
+  color: rgb(156, 163, 175) !important; /* Gris clair UdM */
+}
+
+/* ===== AMÉLIORATION DES COULEURS SUPPLÉMENTAIRES EN MODE SOMBRE ===== */
+
+/* ===== CORRECTION SPÉCIFIQUE POUR LES ÉLÉMENTS DE MISE À JOUR ===== */
+
+/* Force le bon contraste pour les éléments de dernière mise à jour */
+.dark .text-gray-700 {
+  color: rgb(229, 231, 235) !important; /* Texte très clair pour bon contraste */
+}
+
+.dark .dark\:text-gray-200 {
+  color: rgb(229, 231, 235) !important; /* Texte très clair */
+}
+
+/* Force l'opacité des fonds pour meilleure visibilité */
+.dark .bg-gray-100\/80 {
+  background-color: rgba(55, 65, 81, 0.95) !important; /* Fond plus opaque */
+}
+
+.dark .dark\:bg-gray-700\/80 {
+  background-color: rgba(55, 65, 81, 0.95) !important; /* Fond plus opaque */
+}
+
+/* Force les bordures pour meilleure définition */
+.dark .border-gray-200\/50 {
+  border-color: rgba(156, 163, 175, 0.8) !important; /* Bordure plus visible */
+}
+
+.dark .dark\:border-gray-600\/50 {
+  border-color: rgba(156, 163, 175, 0.8) !important; /* Bordure plus visible */
+}
+
+/* Classes spécifiques pour les éléments de mise à jour */
+.update-info-dark {
+  color: rgb(243, 244, 246) !important;
+  background-color: rgba(55, 65, 81, 0.95) !important;
+  border-color: rgba(156, 163, 175, 0.8) !important;
+}
+
+.dark .update-info-dark {
+  color: rgb(243, 244, 246) !important;
+  background-color: rgba(55, 65, 81, 0.95) !important;
+  border-color: rgba(156, 163, 175, 0.8) !important;
+}
+
+/* Amélioration de la visibilité des boutons "Actualiser" en mode sombre */
+.dark .refresh-button-enhanced {
+  background-color: rgba(34, 197, 94, 0.15) !important; /* Fond vert plus visible */
+  border-color: rgb(34, 197, 94) !important; /* Bordure vert vif */
+  color: rgb(74, 222, 128) !important; /* Texte vert clair */
+}
+
+.dark .refresh-button-enhanced:hover {
+  background-color: rgba(34, 197, 94, 0.25) !important; /* Fond plus intense au survol */
+  border-color: rgb(74, 222, 128) !important; /* Bordure encore plus claire */
+  color: rgb(134, 239, 172) !important; /* Texte encore plus clair */
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.3) !important; /* Effet de lueur */
+}
+
+/* Version verte UdM pour le dashboard */
+.dark .refresh-button-blue-enhanced {
+  background-color: rgba(34, 197, 94, 0.15) !important;
+  border-color: rgb(34, 197, 94) !important;
+  color: rgb(74, 222, 128) !important;
+}
+
+.dark .refresh-button-blue-enhanced:hover {
+  background-color: rgba(34, 197, 94, 0.25) !important;
+  border-color: rgb(74, 222, 128) !important;
+  color: rgb(74, 222, 128) !important;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.3) !important;
+}
+
+/* Amélioration des boutons de navigation en mode sombre - SPÉCIFIQUE */
+.dark button.nav-button-enhanced,
+.dark a.nav-button-enhanced,
+.dark .nav-button-enhanced {
+  background-color: rgba(75, 85, 99, 0.9) !important; /* Fond gris plus visible */
+  border-color: rgb(156, 163, 175) !important; /* Bordure gris clair */
+  color: rgb(243, 244, 246) !important; /* Texte blanc cassé */
+  border-width: 2px !important;
+}
+
+.dark button.nav-button-enhanced:hover,
+.dark a.nav-button-enhanced:hover,
+.dark .nav-button-enhanced:hover {
+  background-color: rgba(107, 114, 128, 1) !important; /* Fond plus intense au survol */
+  border-color: rgb(209, 213, 219) !important; /* Bordure encore plus claire */
+  color: rgb(255, 255, 255) !important; /* Texte blanc pur */
+  box-shadow: 0 0 15px rgba(156, 163, 175, 0.4) !important; /* Effet de lueur */
+}
+
+/* Version pour boutons d'action (Modifier) */
+.dark button.action-button-enhanced,
+.dark a.action-button-enhanced,
+.dark .action-button-enhanced {
+  background-color: rgba(34, 197, 94, 0.2) !important; /* Fond vert UdM */
+  border-color: rgb(34, 197, 94) !important; /* Bordure verte UdM */
+  color: rgb(74, 222, 128) !important; /* Texte vert clair UdM */
+  border-width: 2px !important;
+}
+
+.dark button.action-button-enhanced:hover,
+.dark a.action-button-enhanced:hover,
+.dark .action-button-enhanced:hover {
+  background-color: rgba(34, 197, 94, 0.35) !important; /* Fond plus intense au survol */
+  border-color: rgb(74, 222, 128) !important; /* Bordure plus claire */
+  color: rgb(74, 222, 128) !important; /* Texte encore plus clair */
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.4) !important; /* Effet de lueur */
+}
+
+/* Correction spécifique pour les boutons outline en mode sombre */
+.dark [data-variant="outline"].nav-button-enhanced,
+.dark .nav-button-enhanced[data-variant="outline"] {
+  background-color: rgba(75, 85, 99, 0.9) !important;
+  border-color: rgb(156, 163, 175) !important;
+  color: rgb(243, 244, 246) !important;
+}
+
+.dark [data-variant="outline"].action-button-enhanced,
+.dark .action-button-enhanced[data-variant="outline"] {
+  background-color: rgba(34, 197, 94, 0.2) !important;
+  border-color: rgb(34, 197, 94) !important;
+  color: rgb(74, 222, 128) !important;
+}
+
+/* FORCE ABSOLUE pour les boutons outline en mode sombre */
+.dark button[class*="nav-button-enhanced"],
+.dark a[class*="nav-button-enhanced"] {
+  background-color: rgba(75, 85, 99, 0.95) !important;
+  border: 2px solid rgb(156, 163, 175) !important;
+  color: rgb(243, 244, 246) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.dark button[class*="action-button-enhanced"],
+.dark a[class*="action-button-enhanced"] {
+  background-color: rgba(34, 197, 94, 0.25) !important;
+  border: 2px solid rgb(34, 197, 94) !important;
+  color: rgb(74, 222, 128) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+/* Styles ultra-spécifiques pour surpasser Tailwind */
+html.dark button.nav-button-enhanced,
+html.dark a.nav-button-enhanced {
+  background-color: rgba(75, 85, 99, 0.95) !important;
+  border: 2px solid rgb(156, 163, 175) !important;
+  color: rgb(243, 244, 246) !important;
+}
+
+html.dark button.action-button-enhanced,
+html.dark a.action-button-enhanced {
+  background-color: rgba(34, 197, 94, 0.25) !important;
+  border: 2px solid rgb(34, 197, 94) !important;
+  color: rgb(74, 222, 128) !important;
+}
+
+/* Amélioration des couleurs orange */
+.dark .text-orange-600 {
+  color: rgb(251, 146, 60) !important; /* Orange plus clair */
+}
+
+.dark .text-orange-200 {
+  color: rgb(254, 215, 170) !important; /* Orange très clair */
+}
+
+.dark .text-orange-300 {
+  color: rgb(253, 186, 116) !important; /* Orange clair */
+}
+
+.dark .bg-orange-800\/60 {
+  background-color: rgba(154, 52, 18, 0.6) !important; /* Orange sombre avec transparence */
+}
+
+/* Amélioration des couleurs indigo */
+.dark .text-green-600 {
+  color: rgb(129, 140, 248) !important; /* Indigo plus clair */
+}
+
+.dark .text-green-200 {
+  color: rgb(134, 239, 172) !important; /* Indigo très clair */
+}
+
+.dark .text-green-300 {
+  color: rgb(74, 222, 128) !important; /* Indigo clair */
+}
+
+.dark .bg-green-800\/60 {
+  background-color: rgba(55, 48, 163, 0.6) !important; /* Indigo sombre avec transparence */
+}
+
+/* Amélioration des couleurs pink */
+.dark .text-pink-600 {
+  color: rgb(244, 114, 182) !important; /* Pink plus clair */
+}
+
+.dark .text-pink-200 {
+  color: rgb(251, 207, 232) !important; /* Pink très clair */
+}
+
+.dark .text-pink-300 {
+  color: rgb(249, 168, 212) !important; /* Pink clair */
+}
+
+.dark .bg-pink-800\/60 {
+  background-color: rgba(157, 23, 77, 0.6) !important; /* Pink sombre avec transparence */
+}
+
+/* Amélioration des couleurs teal */
+.dark .text-teal-600 {
+  color: rgb(45, 212, 191) !important; /* Teal plus clair */
+}
+
+.dark .text-teal-200 {
+  color: rgb(153, 246, 228) !important; /* Teal très clair */
+}
+
+.dark .text-teal-300 {
+  color: rgb(94, 234, 212) !important; /* Teal clair */
+}
+
+.dark .bg-teal-800\/60 {
+  background-color: rgba(17, 94, 89, 0.6) !important; /* Teal sombre avec transparence */
+}
+
+/* Amélioration des couleurs blue pour les variantes plus claires */
+.dark .text-green-200 {
+  color: rgb(134, 239, 172) !important; /* Bleu très clair */
+}
+
+.dark .text-green-300 {
+  color: rgb(74, 222, 128) !important; /* Bleu clair */
+}
+
+.dark .bg-green-800\/60 {
+  background-color: rgba(30, 58, 138, 0.6) !important; /* Bleu sombre avec transparence */
+}
+
+/* Amélioration des couleurs green pour les variantes plus claires */
+.dark .text-green-200 {
+  color: rgb(187, 247, 208) !important; /* Vert très clair */
+}
+
+.dark .text-green-300 {
+  color: rgb(134, 239, 172) !important; /* Vert clair */
+}
+
+.dark .bg-green-800\/60 {
+  background-color: rgba(22, 101, 52, 0.6) !important; /* Vert sombre avec transparence */
+}
+
+/* Amélioration des couleurs grises UdM pour les variantes plus claires */
+.dark .text-gray-200 {
+  color: rgb(229, 231, 235) !important; /* Gris très clair UdM */
+}
+
+.dark .text-gray-300 {
+  color: rgb(209, 213, 219) !important; /* Gris clair UdM */
+}
+
+.dark .bg-gray-800\/60 {
+  background-color: rgba(31, 41, 55, 0.6) !important; /* Gris sombre UdM avec transparence */
+}
+
+/* Amélioration des couleurs red pour les variantes plus claires */
+.dark .text-red-200 {
+  color: rgb(254, 202, 202) !important; /* Rouge très clair */
+}
+
+.dark .text-red-300 {
+  color: rgb(252, 165, 165) !important; /* Rouge clair */
+}
+
+.dark .bg-red-800\/60 {
+  background-color: rgba(153, 27, 27, 0.6) !important; /* Rouge sombre avec transparence */
+}
+
+/* Amélioration des couleurs yellow pour les variantes plus claires */
+.dark .text-yellow-600 {
+  color: rgb(250, 204, 21) !important; /* Jaune plus clair */
+}
+
+.dark .text-yellow-200 {
+  color: rgb(254, 240, 138) !important; /* Jaune très clair */
+}
+
+.dark .text-yellow-300 {
+  color: rgb(253, 224, 71) !important; /* Jaune clair */
+}
+
+.dark .bg-yellow-800\/60 {
+  background-color: rgba(146, 64, 14, 0.6) !important; /* Jaune sombre avec transparence */
+}
+
+/* ===== AMÉLIORATION DES CARTES DE PRÉSENTATION DES RÔLES ===== */
+
+/* Amélioration des arrière-plans des cartes de rôles */
+.dark .bg-green-50 {
+  background-color: rgba(30, 58, 138, 0.4) !important; /* Bleu sombre avec transparence */
+}
+
+.dark .bg-green-50 {
+  background-color: rgba(20, 83, 45, 0.4) !important; /* Vert sombre avec transparence */
+}
+
+.dark .bg-orange-50 {
+  background-color: rgba(154, 52, 18, 0.4) !important; /* Orange sombre avec transparence */
+}
+
+.dark .bg-gray-50 {
+  background-color: rgba(55, 65, 81, 0.4) !important; /* Gris sombre UdM avec transparence */
+}
+
+.dark .bg-red-50 {
+  background-color: rgba(127, 29, 29, 0.4) !important; /* Rouge sombre avec transparence */
+}
+
+.dark .bg-green-50 {
+  background-color: rgba(67, 56, 202, 0.4) !important; /* Indigo sombre avec transparence */
+}
+
+.dark .bg-pink-50 {
+  background-color: rgba(157, 23, 77, 0.4) !important; /* Rose sombre avec transparence */
+}
+
+.dark .bg-teal-50 {
+  background-color: rgba(15, 118, 110, 0.4) !important; /* Teal sombre avec transparence */
+}
+
+/* Amélioration des couleurs de texte pour les cartes de rôles */
+.dark .text-orange-600 {
+  color: rgb(251, 146, 60) !important; /* Orange plus clair */
+}
+
+.dark .text-green-600 {
+  color: rgb(74, 222, 128) !important; /* Indigo plus clair */
+}
+
+.dark .text-pink-600 {
+  color: rgb(244, 114, 182) !important; /* Rose plus clair */
+}
+
+.dark .text-teal-600 {
+  color: rgb(94, 234, 212) !important; /* Teal plus clair */
+}
+
+/* Amélioration des couleurs de texte pour les titres de rôles */
+.dark .text-green-200 {
+  color: rgb(134, 239, 172) !important; /* Bleu plus clair */
+}
+
+.dark .text-green-200 {
+  color: rgb(187, 247, 208) !important; /* Vert plus clair */
+}
+
+.dark .text-orange-200 {
+  color: rgb(254, 215, 170) !important; /* Orange plus clair */
+}
+
+.dark .text-gray-200 {
+  color: rgb(229, 231, 235) !important; /* Gris clair UdM */
+}
+
+.dark .text-red-200 {
+  color: rgb(254, 202, 202) !important; /* Rouge plus clair */
+}
+
+.dark .text-green-200 {
+  color: rgb(134, 239, 172) !important; /* Indigo plus clair */
+}
+
+.dark .text-pink-200 {
+  color: rgb(251, 207, 232) !important; /* Rose plus clair */
+}
+
+.dark .text-teal-200 {
+  color: rgb(153, 246, 228) !important; /* Teal plus clair */
+}
+
+/* ===== AMÉLIORATION DES ARRIÈRE-PLANS AVEC OPACITÉ ===== */
+
+/* Amélioration des arrière-plans avec opacité /60 */
+.dark .bg-green-800\/60 {
+  background-color: rgba(30, 58, 138, 0.8) !important; /* Plus opaque pour meilleur contraste */
+}
+
+.dark .bg-green-800\/60 {
+  background-color: rgba(20, 83, 45, 0.8) !important; /* Plus opaque pour meilleur contraste */
+}
+
+.dark .bg-orange-800\/60 {
+  background-color: rgba(154, 52, 18, 0.8) !important; /* Plus opaque pour meilleur contraste */
+}
+
+.dark .bg-gray-800\/60 {
+  background-color: rgba(88, 28, 135, 0.8) !important; /* Plus opaque pour meilleur contraste */
+}
+
+.dark .bg-red-800\/60 {
+  background-color: rgba(127, 29, 29, 0.8) !important; /* Plus opaque pour meilleur contraste */
+}
+
+.dark .bg-green-800\/60 {
+  background-color: rgba(67, 56, 202, 0.8) !important; /* Plus opaque pour meilleur contraste */
+}
+
+.dark .bg-pink-800\/60 {
+  background-color: rgba(157, 23, 77, 0.8) !important; /* Plus opaque pour meilleur contraste */
+}
+
+.dark .bg-teal-800\/60 {
+  background-color: rgba(15, 118, 110, 0.8) !important; /* Plus opaque pour meilleur contraste */
+}
+
+/* Amélioration des couleurs de texte pour les icônes */
+.dark .text-green-300 {
+  color: rgb(74, 222, 128) !important; /* Bleu plus clair pour les icônes */
+}
+
+.dark .text-green-300 {
+  color: rgb(134, 239, 172) !important; /* Vert plus clair pour les icônes */
+}
+
+.dark .text-orange-300 {
+  color: rgb(253, 186, 116) !important; /* Orange plus clair pour les icônes */
+}
+
+.dark .text-gray-300 {
+  color: rgb(209, 213, 219) !important; /* Gris clair UdM pour les icônes */
+}
+
+.dark .text-red-300 {
+  color: rgb(252, 165, 165) !important; /* Rouge plus clair pour les icônes */
+}
+
+.dark .text-green-300 {
+  color: rgb(74, 222, 128) !important; /* Indigo plus clair pour les icônes */
+}
+
+.dark .text-pink-300 {
+  color: rgb(244, 114, 182) !important; /* Rose plus clair pour les icônes */
+}
+
+.dark .text-teal-300 {
+  color: rgb(94, 234, 212) !important; /* Teal plus clair pour les icônes */
+}
+
+/* Amélioration des effets de focus en mode sombre */
+.dark *:focus-visible {
+  outline: 2px solid rgb(74, 222, 128) !important;
+  outline-offset: 2px !important;
+}

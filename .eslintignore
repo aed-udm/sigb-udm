@@ -1,0 +1,27 @@
+# Fichiers générés par Next.js
+.next/
+out/
+
+# Fichiers de build
+dist/
+build/
+
+# Dépendances
+node_modules/
+
+# Fichiers de configuration
+*.config.js
+*.config.ts
+
+# Fichiers de types générés
+.next/types/
+
+# Fichiers temporaires
+*.tmp
+*.temp
+
+# Logs
+*.log
+
+# Fichiers de cache
+.cache/
