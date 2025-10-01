@@ -225,12 +225,9 @@ export default function StudentArchivePage() {
     window.document.body.removeChild(link);
   };
 
-  const handleEditDocument = (_document: any) => {
-    // Rediriger vers la page d'édition (à implémenter)
-    toast({
-      title: "Fonctionnalité à venir",
-      description: "L'édition de documents sera bientôt disponible",
-    });
+  const handleEditDocument = (document: any) => {
+    // Rediriger vers la page d'édition
+    router.push(`/archives/diplomes/${studentId}/edit-document/${document.id}`);
   };
 
   const handleDeleteDocument = (document: any) => {
@@ -366,22 +363,23 @@ export default function StudentArchivePage() {
           </div>
         </motion.div>
 
-        <div className="container mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            {/* Sidebar - Informations étudiant */}
+        <div className="container mx-auto px-4 py-4 sm:py-6 lg:py-8">
+          {/* Layout responsive avec sidebar mobile */}
+          <div className="flex flex-col xl:flex-row gap-4 sm:gap-6 lg:gap-8">
+            {/* Sidebar - Informations étudiant - Responsive */}
             <motion.div
               initial={{ x: -20, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
+              animate={{ x: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="lg:col-span-1"
+              className="xl:w-80 xl:flex-shrink-0"
             >
-              <Card className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl border-0 shadow-lg sticky top-24">
-                <CardHeader>
+              <Card className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl border-0 shadow-lg xl:sticky xl:top-24">
+                <CardHeader className="pb-4">
                   <div className="text-center">
-                    <div className="w-20 h-20 bg-gradient-to-br from-green-600 to-green-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <User className="h-10 w-10 text-white" />
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-green-600 to-green-700 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                      <User className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
                     </div>
-                    <CardTitle className="text-xl font-semibold text-gray-900 dark:text-white">
+                    <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white line-clamp-2">
                       {student.full_name}
                     </CardTitle>
                     <Badge variant={student.is_active ? "default" : "secondary"} className="mt-2">
@@ -390,49 +388,51 @@ export default function StudentArchivePage() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Informations principales - Layout responsive */}
                   <div className="space-y-3">
-                    <div className="flex items-center space-x-3 text-sm">
-                      <Mail className="h-4 w-4 text-gray-500" />
-                      <span className="text-gray-900 dark:text-white truncate">{student.email}</span>
+                    <div className="flex items-start space-x-3 text-sm">
+                      <Mail className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-900 dark:text-white break-all text-xs sm:text-sm">{student.email}</span>
                     </div>
-                    
+
                     {student.matricule && (
                       <div className="flex items-center space-x-3 text-sm">
-                        <Award className="h-4 w-4 text-gray-500" />
-                        <span className="text-gray-900 dark:text-white">{student.matricule}</span>
+                        <Award className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                        <span className="text-gray-900 dark:text-white text-xs sm:text-sm">{student.matricule}</span>
                       </div>
                     )}
-                    
+
                     {student.phone && (
                       <div className="flex items-center space-x-3 text-sm">
-                        <Phone className="h-4 w-4 text-gray-500" />
-                        <span className="text-gray-900 dark:text-white">{student.phone}</span>
+                        <Phone className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                        <span className="text-gray-900 dark:text-white text-xs sm:text-sm">{student.phone}</span>
                       </div>
                     )}
-                    
+
                     {student.address && (
-                      <div className="flex items-center space-x-3 text-sm">
-                        <MapPin className="h-4 w-4 text-gray-500" />
-                        <span className="text-gray-900 dark:text-white text-xs">{student.address}</span>
+                      <div className="flex items-start space-x-3 text-sm">
+                        <MapPin className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-gray-900 dark:text-white text-xs leading-relaxed">{student.address}</span>
                       </div>
                     )}
-                    
+
                     <div className="flex items-center space-x-3 text-sm">
-                      <Calendar className="h-4 w-4 text-gray-500" />
-                      <span className="text-gray-900 dark:text-white">
+                      <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                      <span className="text-gray-900 dark:text-white text-xs sm:text-sm">
                         {new Date(student.created_at).toLocaleDateString('fr-FR')}
                       </span>
                     </div>
                   </div>
-                  
+
+                  {/* Statistiques - Layout responsive */}
                   <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <div className="grid grid-cols-2 gap-4 text-center">
-                      <div>
-                        <div className="text-2xl font-bold text-green-600">{totalDocuments}</div>
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4 text-center">
+                      <div className="p-2 sm:p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                        <div className="text-lg sm:text-2xl font-bold text-green-600">{totalDocuments}</div>
                         <div className="text-xs text-gray-500">Documents</div>
                       </div>
-                      <div>
-                        <div className="text-2xl font-bold text-green-600">{formatFileSize(totalSize)}</div>
+                      <div className="p-2 sm:p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                        <div className="text-lg sm:text-2xl font-bold text-green-600">{formatFileSize(totalSize)}</div>
                         <div className="text-xs text-gray-500">Taille totale</div>
                       </div>
                     </div>
@@ -441,48 +441,56 @@ export default function StudentArchivePage() {
               </Card>
             </motion.div>
 
-            {/* Contenu principal */}
+            {/* Contenu principal - Responsive */}
             <motion.div
               initial={{ x: 20, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
+              animate={{ x: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="lg:col-span-3"
+              className="flex-1 min-w-0"
             >
               <Card className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl border-0 shadow-lg">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-xl font-semibold text-gray-900 dark:text-white">
+                <CardHeader className="pb-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
                         Tous les Documents ({totalDocuments})
                       </CardTitle>
-                      <CardDescription>
+                      <CardDescription className="text-sm">
                         Liste complète de tous les documents de l'étudiant
                       </CardDescription>
                     </div>
-                    <Button onClick={handleAddDocument} className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white">
+                    <Button
+                      onClick={handleAddDocument}
+                      className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white w-full sm:w-auto"
+                      size="sm"
+                    >
                       <Plus className="h-4 w-4 mr-2" />
-                      Ajouter
+                      <span className="hidden sm:inline">Ajouter</span>
+                      <span className="sm:hidden">Ajouter un document</span>
                     </Button>
                   </div>
                 </CardHeader>
                 <CardContent>
-
                   {allDocuments.length === 0 ? (
-                    <div className="text-center py-12">
-                      <File className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                    <div className="text-center py-8 sm:py-12">
+                      <File className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white mb-2">
                         Aucun document
                       </h3>
-                      <p className="text-gray-600 dark:text-gray-400 mb-4">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 px-4">
                         Ce dossier ne contient aucun document pour le moment.
                       </p>
-                      <Button onClick={handleAddDocument} className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white">
+                      <Button
+                        onClick={handleAddDocument}
+                        className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white"
+                        size="sm"
+                      >
                         <Plus className="h-4 w-4 mr-2" />
                         Ajouter le premier document
                       </Button>
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                       {allDocuments.map((document, index) => {
                         const FileIcon = getFileIcon(document.type);
                         const CategoryIcon = document.categoryIcon;
@@ -492,25 +500,31 @@ export default function StudentArchivePage() {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.05 }}
-                            className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all duration-200"
+                            className="p-3 sm:p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all duration-200"
                           >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-4">
-                                <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                                  <FileIcon className="h-5 w-5 text-gray-600" />
+                            {/* Layout responsive pour les documents */}
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                              {/* Informations principales */}
+                              <div className="flex items-start space-x-3 flex-1 min-w-0">
+                                <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg flex-shrink-0">
+                                  <FileIcon className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-center space-x-3 mb-1">
-                                    <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+                                  {/* Titre et catégorie */}
+                                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                                    <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base line-clamp-2 sm:line-clamp-1">
                                       {document.name}
                                     </h3>
-                                    <Badge variant="outline" className="flex items-center space-x-1">
+                                    <Badge variant="outline" className="flex items-center space-x-1 w-fit">
                                       <CategoryIcon className="h-3 w-3" />
-                                      <span>{document.categoryName}</span>
+                                      <span className="text-xs">{document.categoryName}</span>
                                     </Badge>
                                   </div>
-                                  <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
-                                    <span>{formatFileSize(document.size)}</span>
+
+                                  {/* Métadonnées - Layout responsive */}
+                                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                                    <span className="font-medium">{formatFileSize(document.size)}</span>
+                                    <span className="hidden sm:inline">•</span>
                                     <span>
                                       {document.uploadDate ?
                                         new Date(document.uploadDate).toLocaleDateString('fr-FR') :
@@ -518,44 +532,52 @@ export default function StudentArchivePage() {
                                       }
                                     </span>
                                     {document.description && (
-                                      <span className="truncate max-w-xs">{document.description}</span>
+                                      <>
+                                        <span className="hidden sm:inline">•</span>
+                                        <span className="line-clamp-1 sm:max-w-xs">{document.description}</span>
+                                      </>
                                     )}
                                   </div>
                                 </div>
                               </div>
-                              <div className="flex items-center space-x-2">
+
+                              {/* Actions - Layout responsive */}
+                              <div className="flex items-center justify-end space-x-1 sm:space-x-2 flex-shrink-0">
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleViewDocument(document)}
                                   title="Voir le document"
+                                  className="h-8 w-8 p-0"
                                 >
-                                  <Eye className="h-4 w-4" />
+                                  <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleDownloadDocument(document)}
                                   title="Télécharger le document"
+                                  className="h-8 w-8 p-0"
                                 >
-                                  <Download className="h-4 w-4" />
+                                  <Download className="h-3 w-3 sm:h-4 sm:w-4" />
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleEditDocument(document)}
                                   title="Modifier le document"
+                                  className="h-8 w-8 p-0"
                                 >
-                                  <Edit className="h-4 w-4" />
+                                  <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="text-red-600 hover:text-red-700"
+                                  className="text-red-600 hover:text-red-700 h-8 w-8 p-0"
                                   onClick={() => handleDeleteDocument(document)}
                                   title="Supprimer le document"
                                 >
-                                  <Trash2 className="h-4 w-4" />
+                                  <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                                 </Button>
                               </div>
                             </div>
@@ -585,54 +607,59 @@ export default function StudentArchivePage() {
         isLoading={isDeleting}
       />
 
-      {/* Dialogue de visualisation de document */}
+      {/* Dialogue de visualisation de document - Responsive */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg max-w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center space-x-2">
-              <Eye className="h-5 w-5 text-green-600" />
+            <DialogTitle className="flex items-center space-x-2 text-base sm:text-lg">
+              <Eye className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
               <span>Informations du document</span>
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm">
               Détails complets du document d'archive
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             {documentToView ? (
               <div className="space-y-4">
-                {/* Informations principales */}
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-3">
-                  <div className="flex items-center justify-between">
+                {/* Informations principales - Layout responsive */}
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 sm:p-4 space-y-3">
+                  {/* Nom du document */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Nom du document:</span>
-                    <span className="font-semibold text-gray-900 dark:text-white text-right max-w-xs truncate">
+                    <span className="font-semibold text-gray-900 dark:text-white text-sm break-words">
                       {documentToView.name}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between">
+                  {/* Catégorie */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Catégorie:</span>
-                    <Badge variant="outline" className="text-green-600 border-green-600">
+                    <Badge variant="outline" className="text-green-600 border-green-600 w-fit">
                       {documentToView.categoryName || documentToView.category}
                     </Badge>
                   </div>
 
-                  <div className="flex items-center justify-between">
+                  {/* Taille du fichier */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Taille du fichier:</span>
-                    <span className="font-medium text-gray-900 dark:text-white">
+                    <span className="font-medium text-gray-900 dark:text-white text-sm">
                       {formatFileSize(documentToView.file_size)}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between">
+                  {/* Type de fichier */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Type de fichier:</span>
-                    <span className="font-medium text-gray-900 dark:text-white">
+                    <span className="font-medium text-gray-900 dark:text-white text-sm break-words">
                       {documentToView.file_type || 'Non spécifié'}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between">
+                  {/* Date d'upload */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Date d'upload:</span>
-                    <span className="font-medium text-gray-900 dark:text-white">
+                    <span className="font-medium text-gray-900 dark:text-white text-sm">
                       {documentToView.upload_date ?
                         new Date(documentToView.upload_date).toLocaleDateString('fr-FR', {
                           year: 'numeric',
@@ -646,22 +673,25 @@ export default function StudentArchivePage() {
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between">
+                  {/* ID du document */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <span className="text-sm font-medium text-gray-600 dark:text-gray-400">ID du document:</span>
-                    <span className="font-mono text-xs text-gray-500 dark:text-gray-400">
+                    <span className="font-mono text-xs text-gray-500 dark:text-gray-400 break-all">
                       {documentToView.id}
                     </span>
                   </div>
 
+                  {/* Description */}
                   {documentToView.description && (
                     <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
                       <span className="text-sm font-medium text-gray-600 dark:text-gray-400 block mb-2">Description:</span>
-                      <p className="text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 p-3 rounded border">
+                      <p className="text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 p-3 rounded border break-words">
                         {documentToView.description}
                       </p>
                     </div>
                   )}
 
+                  {/* Chemin serveur */}
                   {documentToView.document_path && (
                     <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
                       <span className="text-sm font-medium text-gray-600 dark:text-gray-400 block mb-2">Chemin serveur:</span>
@@ -672,25 +702,25 @@ export default function StudentArchivePage() {
                   )}
                 </div>
 
-                {/* Statut du fichier */}
-                <div className="flex items-center justify-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                {/* Statut du fichier - Responsive */}
+                <div className="flex items-center justify-center p-3 sm:p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
                   {documentToView.document_path ? (
                     <div className="flex items-center space-x-2 text-green-700 dark:text-green-400">
-                      <CheckCircle className="h-5 w-5" />
-                      <span className="font-medium">Fichier disponible sur le serveur</span>
+                      <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <span className="font-medium text-sm sm:text-base">Fichier disponible sur le serveur</span>
                     </div>
                   ) : (
                     <div className="flex items-center space-x-2 text-amber-700 dark:text-amber-400">
-                      <AlertCircle className="h-5 w-5" />
-                      <span className="font-medium">Aucun fichier uploadé</span>
+                      <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <span className="font-medium text-sm sm:text-base">Aucun fichier uploadé</span>
                     </div>
                   )}
                 </div>
               </div>
             ) : (
-              <div className="text-center py-8">
-                <FileX className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 dark:text-gray-400">Aucune information disponible</p>
+              <div className="text-center py-6 sm:py-8">
+                <FileX className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 dark:text-gray-400 text-sm">Aucune information disponible</p>
               </div>
             )}
           </div>

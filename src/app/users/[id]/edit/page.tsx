@@ -53,7 +53,14 @@ export default function EditUserPage() {
     address: "",
     barcode: "",
     max_loans: 3,
+    max_reservations: 3,
     is_active: true,
+    account_status: "active",
+    faculty: "",
+    user_category: "student",
+    study_level: "",
+    department: "",
+    institution: "Université des Montagnes",
   });
 
 
@@ -88,7 +95,14 @@ export default function EditUserPage() {
           address: userData.address || "",
           barcode: userData.barcode || "",
           max_loans: userData.max_loans || 3,
+          max_reservations: userData.max_reservations || 3,
           is_active: userData.is_active !== undefined ? userData.is_active : true,
+          account_status: userData.account_status || "active",
+          faculty: userData.faculty || "",
+          user_category: userData.user_category || "student",
+          study_level: userData.study_level || "",
+          department: userData.department || "",
+          institution: userData.institution || "Université des Montagnes",
         });
 
       } catch (err) {
@@ -518,7 +532,7 @@ export default function EditUserPage() {
                   </div>
                 </div>
 
-                {/* Contact et paramètres */}
+                {/* Contact et paramètres - Uniformisé avec la page d'ajout */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   <div>
                     <Label htmlFor="phone">Téléphone</Label>
@@ -541,29 +555,157 @@ export default function EditUserPage() {
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="max_loans">Nombre maximum d'emprunts</Label>
-                    <Input
-                      id="max_loans"
-                      type="number"
-                      value={formData.max_loans}
-                      onChange={(e) => handleInputChange("max_loans", parseInt(e.target.value))}
-                      min="1"
-                      max="10"
-                    />
-                  </div>
-                  <div>
                     <Combobox
-                      label="Statut"
-                      placeholder="Sélectionner un statut..."
-                      value={formData.is_active ? "Actif" : "Inactif"}
-                      onValueChange={handleStatusChange}
+                      label="Limite d'emprunts *"
+                      placeholder="Sélectionner une limite..."
+                      value={`${formData.max_loans || 3} emprunt${(formData.max_loans || 3) > 1 ? 's' : ''}`}
+                      onValueChange={(value) => {
+                        // Extraire le nombre de la chaîne (ex: "3 emprunts" -> 3)
+                        const number = parseInt(value.split(' ')[0]);
+                        handleInputChange("max_loans", number);
+                      }}
                       options={[
-                        "Actif",
-                        "Inactif"
+                        "1 emprunt",
+                        "2 emprunts",
+                        "3 emprunts",
+                        "4 emprunts",
+                        "5 emprunts",
+                        "10 emprunts"
                       ]}
                       allowCustom={false}
                       required={true}
                     />
+                  </div>
+                  <div>
+                    <Combobox
+                      label="Limite de réservations *"
+                      placeholder="Sélectionner une limite..."
+                      value={`${formData.max_reservations || 3} réservation${(formData.max_reservations || 3) > 1 ? 's' : ''}`}
+                      onValueChange={(value) => {
+                        // Extraire le nombre de la chaîne (ex: "3 réservations" -> 3)
+                        const number = parseInt(value.split(' ')[0]);
+                        handleInputChange("max_reservations", number);
+                      }}
+                      options={[
+                        "1 réservation",
+                        "2 réservations",
+                        "3 réservations",
+                        "4 réservations",
+                        "5 réservations",
+                        "10 réservations"
+                      ]}
+                      allowCustom={false}
+                      required={true}
+                    />
+                  </div>
+                </div>
+
+                {/* Statut du compte - Section simplifiée */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+                    Statut du Compte
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <Combobox
+                        label="Statut d'activation"
+                        placeholder="Sélectionner un statut..."
+                        value={formData.is_active ? "Actif" : "Inactif"}
+                        onValueChange={handleStatusChange}
+                        options={[
+                          "Actif",
+                          "Inactif"
+                        ]}
+                        allowCustom={false}
+                        required={true}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Informations académiques - Ajout des champs manquants */}
+                <div className="space-y-6">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+                    Informations Académiques
+                  </h3>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div>
+                      <Combobox
+                        label="Catégorie d'utilisateur"
+                        placeholder="Sélectionner une catégorie..."
+                        value={formData.user_category || "student"}
+                        onValueChange={(value) => handleInputChange("user_category", value)}
+                        options={[
+                          { value: "student", label: "Étudiant" },
+                          { value: "teacher", label: "Enseignant" },
+                          { value: "researcher", label: "Chercheur" },
+                          { value: "staff", label: "Personnel" },
+                          { value: "external", label: "Externe" },
+                          { value: "guest", label: "Invité" },
+                          { value: "alumni", label: "Ancien étudiant" },
+                          { value: "visitor", label: "Visiteur" }
+                        ]}
+                        allowCustom={false}
+                        required={true}
+                      />
+                    </div>
+
+                    <div>
+                      <Combobox
+                        label="Niveau d'études"
+                        placeholder="Sélectionner un niveau..."
+                        value={formData.study_level || ""}
+                        onValueChange={(value) => handleInputChange("study_level", value)}
+                        options={[
+                          { value: "L1", label: "Licence 1" },
+                          { value: "L2", label: "Licence 2" },
+                          { value: "L3", label: "Licence 3" },
+                          { value: "M1", label: "Master 1" },
+                          { value: "M2", label: "Master 2" },
+                          { value: "PhD", label: "Doctorat" },
+                          { value: "PostDoc", label: "Post-Doctorat" },
+                          { value: "Professor", label: "Professeur" },
+                          { value: "Researcher", label: "Chercheur" },
+                          { value: "Staff", label: "Personnel" },
+                          { value: "Other", label: "Autre" }
+                        ]}
+                        allowCustom={false}
+                        required={false}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="faculty">Faculté</Label>
+                      <Input
+                        id="faculty"
+                        value={formData.faculty || ""}
+                        onChange={(e) => handleInputChange("faculty", e.target.value)}
+                        placeholder="Ex: Faculté des Sciences"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <Label htmlFor="department">Département</Label>
+                      <Input
+                        id="department"
+                        value={formData.department || ""}
+                        onChange={(e) => handleInputChange("department", e.target.value)}
+                        placeholder="Ex: Informatique"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="institution">Institution</Label>
+                      <Input
+                        id="institution"
+                        value={formData.institution || ""}
+                        onChange={(e) => handleInputChange("institution", e.target.value)}
+                        placeholder="Université des Montagnes"
+                      />
+                    </div>
                   </div>
                 </div>
 

@@ -26,6 +26,9 @@ import ProtectedLayout from "@/components/layout/protected-layout";
 import { useToast } from "@/hooks/use-toast";
 import { useReliableRefresh } from "@/hooks";
 import { useRefresh } from "@/contexts/refresh-context";
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 import { UnifiedStatCard } from "@/components/ui/instant-components";
 
@@ -170,12 +173,13 @@ interface AnalyticsData {
 }
 
 export default function AnalyticsPage() {
-  const [selectedPeriod, setSelectedPeriod] = useState('6months');
+  // Période fixe - plus de filtre de période
   const [selectedMonth, setSelectedMonth] = useState<string>('');
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [exportFormat, setExportFormat] = useState<'excel' | 'pdf'>('excel');
   const { toast } = useToast();
   const { subscribe } = useRefresh();
 
@@ -183,7 +187,7 @@ export default function AnalyticsPage() {
   const fetchAnalytics = useCallback(async () => {
     try {
       setLoading(true);
-      const url = `/api/analytics?period=${selectedPeriod}${selectedMonth ? `&month=${selectedMonth}` : ''}`;
+      const url = `/api/analytics${selectedMonth ? `?month=${selectedMonth}` : ''}`;
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -202,7 +206,7 @@ export default function AnalyticsPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedPeriod, selectedMonth, toast]);
+  }, [selectedMonth, toast]);
 
   // Système de rafraîchissement avec debouncing pour éviter trop de requêtes
   const { debouncedRefresh } = useReliableRefresh({
@@ -227,7 +231,6 @@ export default function AnalyticsPage() {
       const exportData = {
         metadata: {
           exportDate: new Date().toISOString(),
-          period: selectedPeriod,
           month: selectedMonth || 'Tous les mois',
           source: 'SIGB UdM - Analytics'
         },
@@ -255,35 +258,356 @@ export default function AnalyticsPage() {
         trends: analyticsData.trends
       };
 
-      // Créer et télécharger le fichier JSON
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-        type: 'application/json'
-      });
-
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `analytics_export_${selectedPeriod}_${new Date().toISOString().slice(0, 10)}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      if (exportFormat === 'pdf') {
+        // Export PDF
+        await exportToPDF(exportData);
+      } else {
+        // Export Excel
+        await exportToExcel(exportData);
+      }
 
       toast({
         title: "Export réussi",
-        description: "Les données analytics ont été exportées avec succès",
+        description: `Fichier analytics_export_${new Date().toISOString().slice(0, 10)}.${exportFormat === 'pdf' ? 'pdf' : 'xlsx'} téléchargé`,
       });
     } catch (error) {
-      console.error('Erreur lors de l\'export:', error);
+      console.error('❌ Erreur lors de l\'export:', error);
       toast({
         title: "Erreur d'export",
-        description: "Impossible d'exporter les données",
+        description: error instanceof Error ? error.message : "Erreur inconnue lors de l'export",
         variant: "destructive",
       });
     } finally {
       setExporting(false);
     }
-  }, [analyticsData, selectedPeriod, selectedMonth, toast]);
+  }, [analyticsData, selectedMonth, toast, loading, error, exportFormat]);
+
+  // Fonction d'export Excel - Version claire et compréhensible
+  const exportToExcel = async (exportData: any) => {
+    const workbook = XLSX.utils.book_new();
+    const currentDate = new Date().toLocaleDateString('fr-FR');
+
+    // === FEUILLE 1: RÉSUMÉ GÉNÉRAL ===
+    const monthDescription = selectedMonth ?
+      new Date(selectedMonth + '-01').toLocaleDateString('fr-FR', { year: 'numeric', month: 'long' }) :
+      'Tous les mois';
+
+    const resumeData = [
+      ['RAPPORT ANALYTICS - BIBLIOTHÈQUE UdM'],
+      [`Généré le: ${currentDate}`],
+      [`Mois filtré: ${monthDescription}`],
+      [''],
+      ['INDICATEURS CLÉS', 'VALEURS'],
+      ['Nombre total de livres dans la collection', exportData.statistics.total_books || 0],
+      ['Nombre total d\'utilisateurs inscrits', exportData.statistics.total_users || 0],
+      ['Emprunts actuellement en cours', exportData.statistics.active_loans || 0],
+      ['Emprunts en retard (à récupérer)', exportData.statistics.overdue_loans || 0],
+      ['Nombre de thèses disponibles', exportData.statistics.total_theses || 0],
+      ['Nombre de mémoires disponibles', exportData.statistics.total_memoires || 0],
+      ['Nombre de rapports de stage', exportData.statistics.total_stage_reports || 0],
+      ['Réservations en attente', exportData.statistics.active_reservations || 0],
+      ['Utilisateurs actifs ce mois', exportData.statistics.monthly_active_users || 0],
+      ['Durée moyenne d\'emprunt (en jours)', Math.round(exportData.statistics.avg_loan_duration || 0)],
+      ['Emprunts avec pénalités impayées', exportData.statistics.loans_with_fines || 0],
+      ['Montant total des pénalités (FCFA)', (exportData.statistics.total_fines_amount || 0).toLocaleString('fr-FR')]
+    ];
+
+    const resumeSheet = XLSX.utils.aoa_to_sheet(resumeData);
+
+    // Mise en forme de la feuille résumé
+    resumeSheet['!cols'] = [
+      { width: 50 }, // Colonne descriptions
+      { width: 20 }  // Colonne valeurs
+    ];
+
+    XLSX.utils.book_append_sheet(workbook, resumeSheet, 'Résumé Général');
+
+    // === FEUILLE 2: TOP DES LIVRES LES PLUS EMPRUNTÉS ===
+    if (exportData.popular_books && exportData.popular_books.length > 0) {
+      const booksData = [
+        ['CLASSEMENT DES LIVRES LES PLUS POPULAIRES'],
+        [`Mois: ${monthDescription} | Généré le: ${currentDate}`],
+        [''],
+        ['Rang', 'Titre du Livre', 'Auteur', 'Code ISBN', 'Nombre d\'Emprunts', 'Popularité'],
+        ...exportData.popular_books.slice(0, 20).map((book: any, index: number) => [
+          `${index + 1}°`, // Rang
+          book.title || 'Titre non disponible',
+          book.author || 'Auteur non renseigné',
+          book.isbn || 'ISBN non disponible',
+          book.loan_count || 0,
+          book.loan_count >= 10 ? 'Très populaire' :
+          book.loan_count >= 5 ? 'Populaire' :
+          'Modéré'
+        ])
+      ];
+
+      const booksSheet = XLSX.utils.aoa_to_sheet(booksData);
+      booksSheet['!cols'] = [
+        { width: 8 },  // Rang
+        { width: 40 }, // Titre
+        { width: 25 }, // Auteur
+        { width: 15 }, // ISBN
+        { width: 12 }, // Emprunts
+        { width: 15 }  // Popularité
+      ];
+
+      XLSX.utils.book_append_sheet(workbook, booksSheet, 'Top Livres');
+    }
+
+    // === FEUILLE 3: UTILISATEURS LES PLUS ACTIFS ===
+    if (exportData.active_users && exportData.active_users.length > 0) {
+      const usersData = [
+        ['UTILISATEURS LES PLUS ACTIFS DE LA BIBLIOTHÈQUE'],
+        [`Mois: ${monthDescription} | Généré le: ${currentDate}`],
+        [''],
+        ['Nom Complet', 'Adresse Email', 'Statut Compte', 'Total Emprunts', 'Livres Retournés', 'Emprunts en Retard', 'Pénalités (FCFA)', 'Profil Utilisateur'],
+        ...exportData.active_users.slice(0, 50).map((user: any) => [
+          user.name || 'Nom non disponible',
+          user.email || 'Email non renseigné',
+          user.status === 'active' ? 'Actif' :
+          user.status === 'suspended' ? 'Suspendu' :
+          user.status || 'Statut inconnu',
+          user.loans_count || 0,
+          user.returned_count || 0,
+          user.overdue_count || 0,
+          (user.total_fines || 0).toLocaleString('fr-FR'),
+          // Profil basé sur l'activité
+          (user.loans_count || 0) >= 20 ? 'Lecteur Assidu' :
+          (user.loans_count || 0) >= 10 ? 'Lecteur Régulier' :
+          (user.loans_count || 0) >= 5 ? 'Lecteur Occasionnel' :
+          'Nouveau Lecteur'
+        ])
+      ];
+
+      const usersSheet = XLSX.utils.aoa_to_sheet(usersData);
+      usersSheet['!cols'] = [
+        { width: 25 }, // Nom
+        { width: 30 }, // Email
+        { width: 15 }, // Statut
+        { width: 12 }, // Emprunts
+        { width: 12 }, // Retours
+        { width: 12 }, // Retard
+        { width: 15 }, // Pénalités
+        { width: 18 }  // Profil
+      ];
+
+      XLSX.utils.book_append_sheet(workbook, usersSheet, 'Utilisateurs Actifs');
+    }
+
+    // === FEUILLE 4: ANALYSE PAR CATÉGORIES DE LIVRES ===
+    if (exportData.category_stats && exportData.category_stats.length > 0) {
+      const categoryData = [
+        ['RÉPARTITION DES EMPRUNTS PAR CATÉGORIE'],
+        [`Mois: ${monthDescription} | Généré le: ${currentDate}`],
+        [''],
+        ['Catégorie de Livres', 'Livres Disponibles', 'Total Emprunts', 'Part du Total', 'Lecteurs Différents', 'Durée Moy. (jours)', 'Popularité'],
+        ...exportData.category_stats.map((cat: any) => [
+          cat.category || 'Catégorie non définie',
+          cat.books_count || 0,
+          cat.loans_count || 0,
+          `${(Number(cat.percentage) || 0).toFixed(1)}%`,
+          cat.unique_borrowers || 0,
+          Math.round(Number(cat.avg_loan_duration) || 0),
+          (Number(cat.percentage) || 0) >= 20 ? 'Très demandée' :
+          (Number(cat.percentage) || 0) >= 10 ? 'Populaire' :
+          (Number(cat.percentage) || 0) >= 5 ? 'Modérée' :
+          'Peu demandée'
+        ])
+      ];
+
+      const categorySheet = XLSX.utils.aoa_to_sheet(categoryData);
+      categorySheet['!cols'] = [
+        { width: 25 }, // Catégorie
+        { width: 15 }, // Livres
+        { width: 15 }, // Emprunts
+        { width: 12 }, // Pourcentage
+        { width: 15 }, // Lecteurs
+        { width: 15 }, // Durée
+        { width: 18 }  // Popularité
+      ];
+
+      XLSX.utils.book_append_sheet(workbook, categorySheet, 'Catégories');
+    }
+
+    // === FEUILLE 5: ÉVOLUTION MENSUELLE ===
+    if (exportData.monthly_data && exportData.monthly_data.length > 0) {
+      const monthlyData = [
+        ['ÉVOLUTION MENSUELLE DES ACTIVITÉS'],
+        [`Mois: ${monthDescription} | Généré le: ${currentDate}`],
+        [''],
+        ['Mois', 'Nouveaux Emprunts', 'Livres Retournés', 'Solde (Emprunts - Retours)', 'Tendance'],
+        ...exportData.monthly_data.map((month: any) => {
+          const loans = month.loans || 0;
+          const returns = month.returns || 0;
+          const balance = loans - returns;
+          return [
+            month.month || 'Mois non défini',
+            loans,
+            returns,
+            balance,
+            balance > 0 ? 'Hausse' : balance < 0 ? 'Baisse' : 'Stable'
+          ];
+        })
+      ];
+
+      const monthlySheet = XLSX.utils.aoa_to_sheet(monthlyData);
+      monthlySheet['!cols'] = [
+        { width: 20 }, // Mois
+        { width: 18 }, // Emprunts
+        { width: 18 }, // Retours
+        { width: 20 }, // Solde
+        { width: 15 }  // Tendance
+      ];
+
+      XLSX.utils.book_append_sheet(workbook, monthlySheet, 'Évolution');
+    }
+
+    // Générer et télécharger le fichier Excel
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Rapport_Analytics_UdM_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Fonction d'export PDF - Version corrigée sans caractères spéciaux
+  const exportToPDF = async (exportData: any) => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
+    const margin = 20;
+    let yPosition = margin;
+    const currentDate = new Date().toLocaleDateString('fr-FR');
+
+    // Créer une description claire du mois
+    const monthDescription = selectedMonth ?
+      new Date(selectedMonth + '-01').toLocaleDateString('fr-FR', { year: 'numeric', month: 'long' }) :
+      'Tous les mois';
+
+    // === EN-TETE SIMPLE ET LISIBLE ===
+    doc.setFontSize(18);
+    doc.setTextColor(0, 128, 0); // Vert UdM
+    doc.text('UNIVERSITE DES MONTAGNES', pageWidth / 2, yPosition, { align: 'center' });
+
+    yPosition += 10;
+    doc.setFontSize(14);
+    doc.setTextColor(0, 0, 0);
+    doc.text('RAPPORT ANALYTICS - BIBLIOTHEQUE', pageWidth / 2, yPosition, { align: 'center' });
+
+    yPosition += 15;
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text('Rapport genere le ' + currentDate, pageWidth / 2, yPosition, { align: 'center' });
+
+    doc.text('Mois filtre: ' + monthDescription, pageWidth / 2, yPosition + 5, { align: 'center' });
+
+    yPosition += 20;
+
+    // === RESUME EXECUTIF ===
+    doc.setFontSize(12);
+    doc.setTextColor(0, 128, 0);
+    doc.text('RESUME EXECUTIF', margin, yPosition);
+    yPosition += 10;
+
+    const resumeStats = [
+      ['INDICATEUR CLES', 'VALEUR', 'INTERPRETATION'],
+      ['Collection totale', (exportData.statistics.total_books || 0) + ' livres', 'Taille du fonds documentaire'],
+      ['Utilisateurs inscrits', (exportData.statistics.total_users || 0) + ' personnes', 'Communaute de lecteurs'],
+      ['Emprunts en cours', (exportData.statistics.active_loans || 0) + ' emprunts', 'Activite actuelle'],
+      ['Retards a traiter', (exportData.statistics.overdue_loans || 0) + ' emprunts', 'Necessite un suivi'],
+      ['Documents academiques', ((exportData.statistics.total_theses || 0) + (exportData.statistics.total_memoires || 0) + (exportData.statistics.total_stage_reports || 0)) + '', 'Theses, memoires et rapports'],
+      ['Penalites en attente', (exportData.statistics.total_fines_amount || 0) + ' FCFA', 'Montant a recouvrer']
+    ];
+
+    autoTable(doc, {
+      head: [resumeStats[0]],
+      body: resumeStats.slice(1),
+      startY: yPosition,
+      theme: 'striped',
+      headStyles: {
+        fillColor: [0, 128, 0],
+        textColor: [255, 255, 255],
+        fontSize: 11,
+        fontStyle: 'bold'
+      },
+      bodyStyles: { fontSize: 10 },
+      columnStyles: {
+        0: { cellWidth: 50, fontStyle: 'bold' },
+        1: { cellWidth: 40, halign: 'center' },
+        2: { cellWidth: 80 }
+      },
+      margin: { left: margin, right: margin }
+    });
+
+    yPosition = (doc as any).lastAutoTable.finalY + 20;
+
+    // Nouvelle page si nécessaire
+    if (yPosition > pageHeight - 60) {
+      doc.addPage();
+      yPosition = margin;
+    }
+
+    // === TOP 10 DES LIVRES LES PLUS POPULAIRES ===
+    if (exportData.popular_books && exportData.popular_books.length > 0) {
+      doc.setFontSize(12);
+      doc.setTextColor(0, 128, 0);
+      doc.text('TOP 10 DES LIVRES LES PLUS EMPRUNTES', margin, yPosition);
+      yPosition += 10;
+
+      const booksData = exportData.popular_books.slice(0, 10).map((book: any, index: number) => [
+        (index + 1).toString(),
+        book.title?.substring(0, 35) + (book.title?.length > 35 ? '...' : '') || 'Titre non disponible',
+        book.author?.substring(0, 20) + (book.author?.length > 20 ? '...' : '') || 'Auteur inconnu',
+        (book.loan_count || 0).toString(),
+        (book.loan_count || 0) >= 20 ? 'Tres populaire' :
+        (book.loan_count || 0) >= 10 ? 'Populaire' :
+        'Modere'
+      ]);
+
+      autoTable(doc, {
+        head: [['Rang', 'Titre du Livre', 'Auteur', 'Emprunts', 'Popularite']],
+        body: booksData,
+        startY: yPosition,
+        theme: 'striped',
+        headStyles: {
+          fillColor: [0, 128, 0],
+          textColor: [255, 255, 255],
+          fontSize: 10,
+          fontStyle: 'bold'
+        },
+        bodyStyles: { fontSize: 9 },
+        columnStyles: {
+          0: { cellWidth: 15, halign: 'center' },
+          1: { cellWidth: 70 },
+          2: { cellWidth: 45 },
+          3: { cellWidth: 25, halign: 'center' },
+          4: { cellWidth: 25, halign: 'center' }
+        },
+        margin: { left: margin, right: margin }
+      });
+    }
+
+    // === PIED DE PAGE ===
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text('Page ' + i + ' sur ' + pageCount, pageWidth - margin, pageHeight - 10, { align: 'right' });
+      doc.text('SIGB UdM - Systeme Integre de Gestion de Bibliotheque', margin, pageHeight - 10);
+    }
+
+    // Sauvegarder le PDF avec nom simple
+    doc.save('Rapport_Analytics_UdM_' + new Date().toISOString().slice(0, 10) + '.pdf');
+  };
 
   // Charger les analyticsData au montage et s'abonner aux changements
   useEffect(() => {
@@ -349,9 +673,9 @@ export default function AnalyticsPage() {
               transition={{ duration: 2, repeat: Infinity }}
               className="mb-6"
             >
-              <Activity className="h-16 w-16 text-red-500 mx-auto" />
+              <Activity className="h-16 w-16 text-gray-500 mx-auto" />
             </motion.div>
-            <h2 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">
+            <h2 className="text-2xl font-bold text-gray-600 dark:text-gray-400 mb-4">
               {error || 'Erreur de chargement'}
             </h2>
             <motion.div
@@ -360,7 +684,7 @@ export default function AnalyticsPage() {
             >
               <Button
                 variant="outline"
-                className="border-red-300 text-red-600 hover:bg-red-50"
+                className="border-gray-300 text-gray-600 hover:bg-gray-50"
                 onClick={() => window.location.reload()}
               >
                 <Target className="h-4 w-4 mr-2" />
@@ -437,7 +761,7 @@ export default function AnalyticsPage() {
                       transition={{ duration: 3, repeat: Infinity }}
                       className="inline-block ml-2 sm:ml-3"
                     >
-                      <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500 inline" />
+                      <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 inline" />
                     </motion.span>
                   </motion.div>
                 </div>
@@ -450,36 +774,18 @@ export default function AnalyticsPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6, delay: 0.8 }}
               >
+
+
+                {/* Filtre de mois spécifique - Simple et clair */}
                 <motion.div
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   className="w-full sm:w-auto"
                 >
                   <select
-                    value={selectedPeriod}
-                    onChange={(e) => {
-                      setSelectedPeriod(e.target.value);
-                      setSelectedMonth(''); // Reset month selection when changing period
-                    }}
-                    className="w-full sm:w-auto h-12 px-4 rounded-xl border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 backdrop-blur-sm text-sm font-medium text-gray-900 dark:text-gray-100 ring-offset-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 hover:border-green-400 dark:hover:border-green-500 transition-colors"
-                  >
-                    <option value="1month" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800">1 mois</option>
-                    <option value="3months" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800">3 mois</option>
-                    <option value="6months" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800">6 mois</option>
-                    <option value="1year" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800">1 an</option>
-                  </select>
-                </motion.div>
-
-                {/* Sélecteur de mois spécifique */}
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full sm:w-auto flex items-center gap-2"
-                >
-                  <select
                     value={selectedMonth}
                     onChange={(e) => setSelectedMonth(e.target.value)}
-                    className="w-full sm:w-auto h-12 px-4 rounded-xl border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 backdrop-blur-sm text-sm font-medium text-gray-900 dark:text-gray-100 ring-offset-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 hover:border-blue-400 dark:hover:border-blue-500 transition-colors"
+                    className="w-full sm:w-auto h-12 px-4 rounded-lg border-2 border-gray-300 bg-white text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-green-500 hover:border-gray-400 transition-colors"
                   >
                     <option value="">Tous les mois</option>
                     {Array.from({ length: 12 }, (_, i) => {
@@ -491,7 +797,7 @@ export default function AnalyticsPage() {
                         month: 'long' 
                       });
                       return (
-                        <option key={monthKey} value={monthKey} className="text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800">
+                        <option key={monthKey} value={monthKey}>
                           {monthLabel}
                         </option>
                       );
@@ -502,32 +808,61 @@ export default function AnalyticsPage() {
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                       onClick={() => setSelectedMonth('')}
-                      className="h-8 w-8 rounded-full bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-800 transition-colors flex items-center justify-center text-sm font-bold"
+                      className="h-8 w-8 rounded-full bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors flex items-center justify-center text-sm font-bold"
                     >
                       ✕
                     </motion.button>
                   )}
                 </motion.div>
 
-                <motion.div
-                  whileHover={{
-                    scale: 1.02,
-                    boxShadow: "0 10px 30px rgba(34, 197, 94, 0.3)"
-                  }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full sm:w-auto"
-                >
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    onClick={handleExport}
-                    disabled={exporting || !analyticsData}
-                    className="w-full sm:w-auto bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600 hover:border-green-400 dark:hover:border-green-500 font-medium text-gray-900 dark:text-gray-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                {/* Boutons d'export avec choix de format */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <motion.div
+                    whileHover={{
+                      scale: 1.02,
+                      boxShadow: "0 10px 30px rgba(107, 114, 128, 0.3)"
+                    }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full sm:w-auto"
                   >
-                    <Download className={`h-5 w-5 mr-2 ${exporting ? 'animate-bounce' : ''}`} />
-                    {exporting ? 'Export en cours...' : 'Exporter'}
-                  </Button>
-                </motion.div>
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      onClick={() => {
+                        setExportFormat('pdf');
+                        handleExport();
+                      }}
+                      disabled={exporting || !analyticsData}
+                      className="w-full sm:w-auto bg-white hover:bg-gray-50 text-gray-600 border-gray-600 hover:border-gray-700 font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Download className={`h-4 w-4 mr-2 ${exporting && exportFormat === 'pdf' ? 'animate-bounce' : ''}`} />
+                      {exporting && exportFormat === 'pdf' ? 'Export PDF...' : 'Exporter PDF'}
+                    </Button>
+                  </motion.div>
+
+                  <motion.div
+                    whileHover={{
+                      scale: 1.02,
+                      boxShadow: "0 10px 30px rgba(34, 197, 94, 0.3)"
+                    }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full sm:w-auto"
+                  >
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      onClick={() => {
+                        setExportFormat('excel');
+                        handleExport();
+                      }}
+                      disabled={exporting || !analyticsData}
+                      className="w-full sm:w-auto bg-white hover:bg-gray-50 text-green-600 border-green-600 hover:border-green-700 font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Download className={`h-4 w-4 mr-2 ${exporting && exportFormat === 'excel' ? 'animate-bounce' : ''}`} />
+                      {exporting && exportFormat === 'excel' ? 'Export Excel...' : 'Exporter Excel'}
+                    </Button>
+                  </motion.div>
+                </div>
 
                 {/* Bouton de rafraîchissement intelligent */}
                 <motion.div
@@ -628,7 +963,7 @@ export default function AnalyticsPage() {
                             </div>
                             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                               <div
-                                className="bg-blue-600 h-2 rounded-full"
+                                className="bg-green-600 h-2 rounded-full"
                                 style={{ width: `${Math.max((data.total / Math.max(...analyticsData.monthly_additions.map(m => m.total))) * 100, 5)}%` }}
                               />
                             </div>
@@ -706,7 +1041,7 @@ export default function AnalyticsPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
-                    <Award className="h-5 w-5 text-yellow-500" />
+                    <Award className="h-5 w-5 text-green-500" />
                     <span>Livres les Plus Empruntés</span>
                   </CardTitle>
                   <CardDescription>
@@ -767,7 +1102,7 @@ export default function AnalyticsPage() {
                     {analyticsData.popular_reserved_books && analyticsData.popular_reserved_books.length > 0 ? (
                       analyticsData.popular_reserved_books.map((book, index) => (
                         <div key={book.id} className="flex items-center space-x-3 sm:space-x-4">
-                          <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm">
+                          <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm">
                             {index + 1}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -806,7 +1141,7 @@ export default function AnalyticsPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
-                    <GraduationCap className="h-5 w-5 text-blue-500" />
+                    <GraduationCap className="h-5 w-5 text-gray-500" />
                     <span>Documents Académiques les Plus Empruntés</span>
                   </CardTitle>
                   <CardDescription>
@@ -818,7 +1153,7 @@ export default function AnalyticsPage() {
                     {analyticsData.popular_academic_documents && analyticsData.popular_academic_documents.length > 0 ? (
                       analyticsData.popular_academic_documents.map((doc, index) => (
                         <div key={doc.id} className="flex items-center space-x-3 sm:space-x-4">
-                          <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm">
+                          <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm">
                             {index + 1}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -830,7 +1165,7 @@ export default function AnalyticsPage() {
                             </p>
                           </div>
                           <div className="text-right flex-shrink-0">
-                            <p className="text-base sm:text-lg font-bold text-blue-600">{doc.loans_count}</p>
+                            <p className="text-base sm:text-lg font-bold text-gray-600">{doc.loans_count}</p>
                             <p className="text-xs text-gray-500">emprunts</p>
                           </div>
                         </div>
@@ -855,7 +1190,7 @@ export default function AnalyticsPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
-                    <FileText className="h-5 w-5 text-purple-500" />
+                    <FileText className="h-5 w-5 text-green-500" />
                     <span>Documents Académiques les Plus Réservés</span>
                   </CardTitle>
                   <CardDescription>
@@ -867,7 +1202,7 @@ export default function AnalyticsPage() {
                     {analyticsData.popular_reserved_academic_documents && analyticsData.popular_reserved_academic_documents.length > 0 ? (
                       analyticsData.popular_reserved_academic_documents.map((doc, index) => (
                         <div key={doc.id} className="flex items-center space-x-3 sm:space-x-4">
-                          <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm">
+                          <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm">
                             {index + 1}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -879,7 +1214,7 @@ export default function AnalyticsPage() {
                             </p>
                           </div>
                           <div className="text-right flex-shrink-0">
-                            <p className="text-base sm:text-lg font-bold text-purple-600">{doc.reservations_count}</p>
+                            <p className="text-base sm:text-lg font-bold text-green-600">{doc.reservations_count}</p>
                             <p className="text-xs text-gray-500">réservations</p>
                           </div>
                         </div>

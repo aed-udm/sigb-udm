@@ -529,7 +529,8 @@ export default function UserDetailPage() {
                     </h3>
                     <div className="space-y-2 text-sm">
                       <p><strong>Emprunts maximum:</strong> {user.max_loans}</p>
-                      <p><strong>Statut:</strong> 
+                      <p><strong>Réservations maximum:</strong> {user.max_reservations || 3}</p>
+                      <p><strong>Statut:</strong>
                         <span className={user.is_active ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
                           {' '}{user.is_active ? 'Actif' : 'Inactif'}
                         </span>

@@ -698,8 +698,8 @@ export const getThesisById = async (id: string): Promise<Thesis | null> => {
     // Clean up 'NULL' string values
     document_path: thesis.document_path === 'NULL' ? undefined : thesis.document_path,
     // Utiliser les valeurs calculées
-    available_copies: (thesis as any).calculated_available_copies,
-    status: (thesis as any).calculated_status
+    ...(thesis as any).calculated_available_copies !== undefined && { available_copies: (thesis as any).calculated_available_copies },
+    ...(thesis as any).calculated_status !== undefined && { status: (thesis as any).calculated_status }
   };
 };
 
@@ -787,8 +787,8 @@ export const getMemoireById = async (id: string): Promise<Memoire | null> => {
     // Clean up 'NULL' string values
     document_path: memoire.document_path === 'NULL' ? undefined : memoire.document_path,
     // Utiliser les valeurs calculées
-    available_copies: (memoire as any).calculated_available_copies,
-    status: (memoire as any).calculated_status
+    ...(memoire as any).calculated_available_copies !== undefined && { available_copies: (memoire as any).calculated_available_copies },
+    ...(memoire as any).calculated_status !== undefined && { status: (memoire as any).calculated_status }
   };
 };
 
@@ -911,53 +911,72 @@ export const getAcademicDocuments = async (filters?: {
     let theseQuery = `
       SELECT
         'these' as document_type,
-        id,
-        title,
-        main_author as author,
-        director as supervisor,
-        target_degree as degree,
-        specialty,
-        defense_year as year,
-        defense_date,
-        university,
-        faculty,
-        document_path,
-        document_type as file_type,
-        document_size,
-        is_accessible,
-        available_copies,
-        total_copies,
-        created_at
-      FROM theses WHERE 1=1
+        t.id,
+        t.title,
+        t.main_author as author,
+        t.director as supervisor,
+        t.target_degree as degree,
+        t.specialty,
+        t.defense_year as year,
+        t.defense_date,
+        t.university,
+        t.faculty,
+        t.document_path,
+        t.document_type as file_type,
+        t.document_size,
+        t.is_accessible,
+        GREATEST(0, t.total_copies - COALESCE(loans.active_count, 0) - COALESCE(reservations.active_count, 0) - COALESCE(consultations.active_count, 0)) as available_copies,
+        t.total_copies,
+        t.created_at
+      FROM theses t
+      LEFT JOIN (
+        SELECT academic_document_id, COUNT(*) as active_count
+        FROM loans
+        WHERE status IN ('active', 'overdue') AND document_type = 'these'
+        GROUP BY academic_document_id
+      ) loans ON CAST(t.id AS CHAR) = CAST(loans.academic_document_id AS CHAR)
+      LEFT JOIN (
+        SELECT academic_document_id, COUNT(*) as active_count
+        FROM reservations
+        WHERE status = 'active' AND document_type = 'these'
+        GROUP BY academic_document_id
+      ) reservations ON CAST(t.id AS CHAR) = CAST(reservations.academic_document_id AS CHAR)
+      LEFT JOIN (
+        SELECT academic_document_id, COUNT(*) as active_count
+        FROM reading_room_consultations
+        WHERE status = 'active' AND document_type = 'these'
+        GROUP BY academic_document_id
+      ) consultations ON CAST(t.id AS CHAR) = CAST(consultations.academic_document_id AS CHAR)
+      WHERE 1=1
     `;
     const theseParams: any[] = [];
 
     if (filters?.search) {
-      theseQuery += ' AND (title LIKE ? OR main_author LIKE ? OR director LIKE ?)';
+      theseQuery += ' AND (t.title LIKE ? OR t.main_author LIKE ? OR t.director LIKE ?)';
       const searchTerm = `%${filters.search}%`;
       theseParams.push(searchTerm, searchTerm, searchTerm);
     }
 
     if (filters?.university) {
-      theseQuery += ' AND university LIKE ?';
+      theseQuery += ' AND t.university LIKE ?';
       theseParams.push(`%${filters.university}%`);
     }
 
     if (filters?.year) {
-      theseQuery += ' AND defense_year = ?';
+      theseQuery += ' AND t.defense_year = ?';
       theseParams.push(filters.year);
     }
 
     if (filters?.has_file !== undefined) {
       if (filters.has_file) {
-        theseQuery += ' AND document_path IS NOT NULL';
+        theseQuery += ' AND t.document_path IS NOT NULL';
       } else {
-        theseQuery += ' AND document_path IS NULL';
+        theseQuery += ' AND t.document_path IS NULL';
       }
     }
 
     if (filters?.available_only) {
-      theseQuery += ' AND available_copies > 0';
+      theseQuery += ' HAVING available_copies > 0';
     }
 
     queries.push({ type: 'these', query: theseQuery, params: theseParams });
@@ -967,53 +986,72 @@ export const getAcademicDocuments = async (filters?: {
     let memoireQuery = `
       SELECT
         'memoire' as document_type,
-        id,
-        title,
-        main_author as author,
-        supervisor,
-        degree_level as degree,
-        specialty,
-        academic_year as year,
-        defense_date,
-        university,
-        faculty,
-        document_path,
-        document_type as file_type,
-        document_size,
-        is_accessible,
-        available_copies,
-        total_copies,
-        created_at
-      FROM memoires WHERE 1=1
+        m.id,
+        m.title,
+        m.main_author as author,
+        m.supervisor,
+        m.degree_level as degree,
+        m.specialty,
+        m.academic_year as year,
+        m.defense_date,
+        m.university,
+        m.faculty,
+        m.document_path,
+        m.document_type as file_type,
+        m.document_size,
+        m.is_accessible,
+        GREATEST(0, m.total_copies - COALESCE(loans.active_count, 0) - COALESCE(reservations.active_count, 0) - COALESCE(consultations.active_count, 0)) as available_copies,
+        m.total_copies,
+        m.created_at
+      FROM memoires m
+      LEFT JOIN (
+        SELECT academic_document_id, COUNT(*) as active_count
+        FROM loans
+        WHERE status IN ('active', 'overdue') AND document_type = 'memoire'
+        GROUP BY academic_document_id
+      ) loans ON CAST(m.id AS CHAR) = CAST(loans.academic_document_id AS CHAR)
+      LEFT JOIN (
+        SELECT academic_document_id, COUNT(*) as active_count
+        FROM reservations
+        WHERE status = 'active' AND document_type = 'memoire'
+        GROUP BY academic_document_id
+      ) reservations ON CAST(m.id AS CHAR) = CAST(reservations.academic_document_id AS CHAR)
+      LEFT JOIN (
+        SELECT academic_document_id, COUNT(*) as active_count
+        FROM reading_room_consultations
+        WHERE status = 'active' AND document_type = 'memoire'
+        GROUP BY academic_document_id
+      ) consultations ON CAST(m.id AS CHAR) = CAST(consultations.academic_document_id AS CHAR)
+      WHERE 1=1
     `;
     const memoireParams: any[] = [];
 
     if (filters?.search) {
-      memoireQuery += ' AND (title LIKE ? OR main_author LIKE ? OR supervisor LIKE ?)';
+      memoireQuery += ' AND (m.title LIKE ? OR m.main_author LIKE ? OR m.supervisor LIKE ?)';
       const searchTerm = `%${filters.search}%`;
       memoireParams.push(searchTerm, searchTerm, searchTerm);
     }
 
     if (filters?.university) {
-      memoireQuery += ' AND university LIKE ?';
+      memoireQuery += ' AND m.university LIKE ?';
       memoireParams.push(`%${filters.university}%`);
     }
 
     if (filters?.year) {
-      memoireQuery += ' AND YEAR(defense_date) = ?';
+      memoireQuery += ' AND YEAR(m.defense_date) = ?';
       memoireParams.push(filters.year);
     }
 
     if (filters?.has_file !== undefined) {
       if (filters.has_file) {
-        memoireQuery += ' AND document_path IS NOT NULL';
+        memoireQuery += ' AND m.document_path IS NOT NULL';
       } else {
-        memoireQuery += ' AND document_path IS NULL';
+        memoireQuery += ' AND m.document_path IS NULL';
       }
     }
 
     if (filters?.available_only) {
-      memoireQuery += ' AND available_copies > 0';
+      memoireQuery += ' HAVING available_copies > 0';
     }
 
     queries.push({ type: 'memoire', query: memoireQuery, params: memoireParams });
@@ -1023,54 +1061,73 @@ export const getAcademicDocuments = async (filters?: {
     let stageQuery = `
       SELECT
         'rapport_stage' as document_type,
-        id,
-        title,
-        student_name as author,
-        supervisor,
-        degree_level as degree,
-        specialty,
-        academic_year as year,
-        defense_date,
-        university,
-        faculty,
-        document_path,
-        document_type as file_type,
-        document_size,
-        is_accessible,
-        available_copies,
-        total_copies,
-        created_at,
-        updated_at
-      FROM stage_reports WHERE 1=1
+        s.id,
+        s.title,
+        s.student_name as author,
+        s.supervisor,
+        s.degree_level as degree,
+        s.specialty,
+        s.academic_year as year,
+        s.defense_date,
+        s.university,
+        s.faculty,
+        s.document_path,
+        s.document_type as file_type,
+        s.document_size,
+        s.is_accessible,
+        GREATEST(0, s.total_copies - COALESCE(loans.active_count, 0) - COALESCE(reservations.active_count, 0) - COALESCE(consultations.active_count, 0)) as available_copies,
+        s.total_copies,
+        s.created_at,
+        s.updated_at
+      FROM stage_reports s
+      LEFT JOIN (
+        SELECT academic_document_id, COUNT(*) as active_count
+        FROM loans
+        WHERE status IN ('active', 'overdue') AND document_type = 'rapport_stage'
+        GROUP BY academic_document_id
+      ) loans ON CAST(s.id AS CHAR) = CAST(loans.academic_document_id AS CHAR)
+      LEFT JOIN (
+        SELECT academic_document_id, COUNT(*) as active_count
+        FROM reservations
+        WHERE status = 'active' AND document_type = 'rapport_stage'
+        GROUP BY academic_document_id
+      ) reservations ON CAST(s.id AS CHAR) = CAST(reservations.academic_document_id AS CHAR)
+      LEFT JOIN (
+        SELECT academic_document_id, COUNT(*) as active_count
+        FROM reading_room_consultations
+        WHERE status = 'active' AND document_type = 'rapport_stage'
+        GROUP BY academic_document_id
+      ) consultations ON CAST(s.id AS CHAR) = CAST(consultations.academic_document_id AS CHAR)
+      WHERE 1=1
     `;
     const stageParams: any[] = [];
 
     if (filters?.search) {
-      stageQuery += ' AND (title LIKE ? OR student_name LIKE ? OR supervisor LIKE ?)';
+      stageQuery += ' AND (s.title LIKE ? OR s.student_name LIKE ? OR s.supervisor LIKE ?)';
       const searchTerm = `%${filters.search}%`;
       stageParams.push(searchTerm, searchTerm, searchTerm);
     }
 
     if (filters?.university) {
-      stageQuery += ' AND university LIKE ?';
+      stageQuery += ' AND s.university LIKE ?';
       stageParams.push(`%${filters.university}%`);
     }
 
     if (filters?.year) {
-      stageQuery += ' AND YEAR(defense_date) = ?';
+      stageQuery += ' AND YEAR(s.defense_date) = ?';
       stageParams.push(filters.year);
     }
 
     if (filters?.has_file !== undefined) {
       if (filters.has_file) {
-        stageQuery += ' AND document_path IS NOT NULL';
+        stageQuery += ' AND s.document_path IS NOT NULL';
       } else {
-        stageQuery += ' AND document_path IS NULL';
+        stageQuery += ' AND s.document_path IS NULL';
       }
     }
 
     if (filters?.available_only) {
-      stageQuery += ' AND available_copies > 0';
+      stageQuery += ' HAVING available_copies > 0';
     }
 
     queries.push({ type: 'rapport_stage', query: stageQuery, params: stageParams });

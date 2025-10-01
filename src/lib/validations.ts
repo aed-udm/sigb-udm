@@ -1,5 +1,25 @@
 import { z } from 'zod'
 
+// Fonction de sanitisation pour prévenir les attaques XSS
+const sanitizeString = (str: string) => {
+  if (!str) return str;
+  return str
+    .replace(/[<>]/g, '') // Supprimer les balises HTML
+    .replace(/javascript:/gi, '') // Supprimer les liens javascript
+    .replace(/on\w+=/gi, '') // Supprimer les handlers d'événements
+    .trim();
+};
+
+// Validation sécurisée pour les chaînes de caractères
+const secureString = (minLength: number = 1, maxLength: number = 255) =>
+  z.string()
+    .min(minLength)
+    .max(maxLength)
+    .transform(sanitizeString)
+    .refine((val) => !/<script|javascript:|on\w+=/i.test(val), {
+      message: 'Contenu potentiellement dangereux détecté'
+    });
+
 // Book validation schema - Conforme aux standards bibliographiques internationaux
 export const bookSchema = z.object({
   // Identifiants standardisés
@@ -12,11 +32,11 @@ export const bookSchema = z.object({
   isbn: z.string().optional().refine((val) => !val || /^(?:\d{9}[\dX]|\d{13})$/.test(val.replace(/-/g, '')), {
     message: 'ISBN invalide (format: 978-2-1234-5678-9 ou 2-1234-5678-X)'
   }),
-  title: z.string().min(1, 'Le titre est requis'),
-  subtitle: z.string().optional(),
-  parallel_title: z.string().optional(),
-  main_author: z.string().min(1, 'L\'auteur principal est requis'),
-  secondary_author: z.string().optional(),
+  title: secureString(1, 500).refine((val) => val.length > 0, 'Le titre est requis'),
+  subtitle: secureString(0, 500).optional(),
+  parallel_title: secureString(0, 500).optional(),
+  main_author: secureString(1, 255).refine((val) => val.length > 0, 'L\'auteur principal est requis'),
+  secondary_author: secureString(0, 255).optional(),
   edition: z.string().optional(),
   publication_city: z.string().optional(),
   publisher: z.string().optional(),
@@ -249,10 +269,12 @@ export const userSchema = z.object({
   handle: z.string().optional(),
   email: z.string().email('Email invalide').optional(),
   full_name: z.string().min(1, 'Le nom complet est requis'),
-  matricule: z.string().min(1, 'Le matricule est obligatoire').refine((matricule) => {
+  matricule: z.string().optional().refine((matricule) => {
+    if (!matricule) return true; // Matricule optionnel en modification
     return /^[A-Z0-9]{6,20}$/.test(matricule);
   }, 'Format de matricule invalide (6-20 caractères alphanumériques)'),
-  phone: z.string().min(1, 'Le téléphone est obligatoire').refine((phone) => {
+  phone: z.string().optional().refine((phone) => {
+    if (!phone) return true; // Téléphone optionnel en modification
     // Validation du format téléphone camerounais: +237 6XX XXX XXX
     return /^(\+237|237)?[6-9]\d{8}$/.test(phone.replace(/\s/g, ''));
   }, 'Format de téléphone camerounais invalide (+237 6XX XXX XXX)'),
@@ -283,6 +305,7 @@ export const loanSchema = z.object({
   book_id: z.string().uuid('ID livre invalide').optional(),
   academic_document_id: z.string().uuid('ID document académique invalide').optional(),
   document_type: z.enum(['book', 'these', 'memoire', 'rapport_stage']).default('book'),
+  loan_type: z.enum(['loan', 'reading_room']).default('loan'),
   loan_date: z.string().optional(),
   due_date: z.string().min(1, 'La date de retour est requise'),
 }).refine(
@@ -296,6 +319,17 @@ export const loanSchema = z.object({
   {
     message: "Seul un livre OU un document académique peut être emprunté à la fois",
     path: ["academic_document_id"]
+  }
+).refine(
+  (data) => {
+    // 🔒 SÉCURITÉ ANTI-PLAGIAT : Validation côté schéma
+    const isAcademicDocument = ['these', 'memoire', 'rapport_stage'].includes(data.document_type);
+    const isHomeLoan = data.loan_type === 'loan';
+    return !(isAcademicDocument && isHomeLoan);
+  },
+  {
+    message: "Les thèses, mémoires et rapports de stage ne peuvent être consultés qu'en salle de lecture",
+    path: ["loan_type"]
   }
 )
 
@@ -478,3 +512,23 @@ export const settingsSchema = z.object({
 })
 
 export type SettingsFormData = z.infer<typeof settingsSchema>
+
+// Archive document validation schema
+export const archiveDocumentSchema = z.object({
+  id: z.string().uuid().optional(),
+  student_id: z.string().uuid('ID étudiant requis'),
+  name: z.string().min(1, 'Le nom du document est requis').max(255, 'Nom trop long'),
+  description: z.string().max(1000, 'Description trop longue').optional(),
+  category: z.enum(['diplomes', 'releves', 'autres'], {
+    errorMap: () => ({ message: 'Catégorie invalide' })
+  }),
+  file_type: z.string().optional(),
+  file_size: z.number().min(0, 'Taille invalide').optional(),
+  document_path: z.string().optional(),
+  upload_date: z.string().optional(),
+  academic_year: z.string().optional(),
+  keywords: z.array(z.string()).optional(),
+  notes: z.string().max(500, 'Notes trop longues').optional()
+});
+
+export type ArchiveDocumentFormData = z.infer<typeof archiveDocumentSchema>

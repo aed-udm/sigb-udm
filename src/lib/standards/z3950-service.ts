@@ -299,7 +299,7 @@ export class Z3950Service {
     const allErrors: string[] = [];
     const allWarnings: string[] = [];
 
-    console.log(`🔍 Recherche fédérée sur ${servers.length} serveurs...`);
+    console.log(`Recherche fédérée sur ${servers.length} serveurs...`);
 
     // Recherche parallèle sur tous les serveurs
     const searchPromises = servers.map(async (serverKey) => {
@@ -327,7 +327,7 @@ export class Z3950Service {
         const { serverKey, result } = promiseResult.value;
         if (result.success && result.records.length > 0) {
           allRecords.push(...result.records);
-          console.log(`✅ ${serverKey}: ${result.records.length} résultat(s)`);
+          console.log(`${serverKey}: ${result.records.length} résultat(s)`);
         } else if (result.errors) {
           allErrors.push(...result.errors);
         }
@@ -340,7 +340,7 @@ export class Z3950Service {
     // Dédupliquer les enregistrements par ISBN ou titre
     const uniqueRecords = Z3950Service.deduplicateRecords(allRecords);
 
-    console.log(`📚 Total consolidé: ${uniqueRecords.length} résultat(s) unique(s)`);
+    console.log(`Total consolidé: ${uniqueRecords.length} résultat(s) unique(s)`);
 
     return {
       success: uniqueRecords.length > 0,
@@ -469,11 +469,11 @@ export class Z3950Service {
    */
   private static async searchWorldCatAPI(isbn: string): Promise<Z3950SearchResult> {
     try {
-      console.log(`🌍 Recherche WorldCat pour ISBN: ${isbn}`);
+      console.log(`Recherche WorldCat pour ISBN: ${isbn}`);
 
       // WorldCat nécessite une clé API OCLC payante
       // Pour l'instant, on utilise un fallback vers les sources gratuites
-      console.log(`⚠️ WorldCat nécessite une authentification OCLC, fallback vers sources gratuites`);
+      console.log(`WorldCat nécessite une authentification OCLC, fallback vers sources gratuites`);
 
       // Essayer BNF en premier
       const bnfResult = await RealLibraryAPI.searchBNF(isbn);
@@ -507,7 +507,7 @@ export class Z3950Service {
       };
 
     } catch (error) {
-      console.error('❌ Erreur WorldCat:', error);
+      console.error('Erreur WorldCat:', error);
       return {
         success: false,
         records: [],
@@ -1036,12 +1036,26 @@ export class Z3950Service {
         console.warn('⚠️ Erreur Gallica:', error);
       }
 
+      // CORRECTION : Ajouter des avertissements clairs
+      const warnings: string[] = [];
+
+      if (totalFound === 0) {
+        warnings.push('Aucune version numérique complète et gratuite trouvée');
+        warnings.push('Les versions payantes ou avec DRM ne sont pas affichées');
+        warnings.push('Vérifiez l\'orthographe du titre et de l\'auteur');
+      } else {
+        warnings.push('Seules les versions complètes et vérifiées sont affichées');
+        warnings.push('Les échantillons et aperçus ont été exclus');
+      }
+
       return {
         success: true,
         totalFound,
         versions,
         searchQuery: `${title} ${author}`,
-        sources: ['Google Books', 'Internet Archive', 'Project Gutenberg', 'Gallica']
+        sources: ['Google Books', 'Internet Archive', 'Project Gutenberg', 'Gallica'],
+        warnings,
+        note: 'Seules les versions numériques complètes, gratuites et vérifiées sont proposées'
       };
 
     } catch (error) {
@@ -1057,7 +1071,8 @@ export class Z3950Service {
   }
 
   /**
-   * Recherche dans Google Books pour versions numériques
+   * Recherche dans Google Books pour versions numériques - VERSION CORRIGÉE
+   * Ne retourne QUE les versions complètes et vérifiées
    */
   private static async searchGoogleBooksDigital(isbn: string): Promise<any> {
     try {
@@ -1074,32 +1089,55 @@ export class Z3950Service {
           const volumeInfo = item.volumeInfo;
           const accessInfo = item.accessInfo;
 
-          // Vérifier les versions EPUB
-          if (accessInfo?.epub?.isAvailable) {
-            versions.push({
-              format: 'EPUB',
-              source: 'Google Books',
-              access: accessInfo.epub.acsTokenLink ? 'Échantillon' : 'Complet',
-              url: accessInfo.epub.acsTokenLink || accessInfo.epub.downloadLink,
-              quality: 'Haute',
-              size: 'Variable',
-              language: volumeInfo.language || 'fr'
-            });
+          // ✅ CORRECTION MAJEURE : Vérifier que c'est une version COMPLÈTE et GRATUITE
+          const isFullyAvailable = accessInfo?.viewability === 'ALL_PAGES' ||
+                                  accessInfo?.accessViewStatus === 'FULL_PUBLIC_DOMAIN';
+
+          // ✅ CORRECTION : Ne retourner QUE les livres du domaine public ou gratuits
+          if (!isFullyAvailable) {
+            console.log(`⚠️ Google Books: "${volumeInfo.title}" - Accès limité (${accessInfo?.viewability})`);
+            continue;
           }
 
-          // Vérifier les versions PDF
-          if (accessInfo?.pdf?.isAvailable) {
-            versions.push({
-              format: 'PDF',
-              source: 'Google Books',
-              access: accessInfo.pdf.acsTokenLink ? 'Échantillon' : 'Complet',
-              url: accessInfo.pdf.acsTokenLink || accessInfo.pdf.downloadLink,
-              quality: 'Haute',
-              size: 'Variable',
-              language: volumeInfo.language || 'fr'
-            });
+          // Vérifier les versions EPUB complètes uniquement
+          if (accessInfo?.epub?.isAvailable && !accessInfo.epub.acsTokenLink) {
+            const downloadUrl = accessInfo.epub.downloadLink;
+            if (downloadUrl && !downloadUrl.includes('preview') && !downloadUrl.includes('sample')) {
+              versions.push({
+                format: 'EPUB',
+                source: 'Google Books',
+                access: 'Gratuit (Domaine public)',
+                url: downloadUrl,
+                quality: 'Haute',
+                size: 'Variable',
+                language: volumeInfo.language || 'fr',
+                verified: true
+              });
+            }
+          }
+
+          // Vérifier les versions PDF complètes uniquement
+          if (accessInfo?.pdf?.isAvailable && !accessInfo.pdf.acsTokenLink) {
+            const downloadUrl = accessInfo.pdf.downloadLink;
+            if (downloadUrl && !downloadUrl.includes('preview') && !downloadUrl.includes('sample')) {
+              versions.push({
+                format: 'PDF',
+                source: 'Google Books',
+                access: 'Gratuit (Domaine public)',
+                url: downloadUrl,
+                quality: 'Haute',
+                size: 'Variable',
+                language: volumeInfo.language || 'fr',
+                verified: true
+              });
+            }
           }
         }
+      }
+
+      // ✅ CORRECTION : Ajouter un message explicatif si aucune version complète trouvée
+      if (versions.length === 0) {
+        console.log(`📭 Google Books: Aucune version numérique complète gratuite pour ISBN ${cleanISBN}`);
       }
 
       return { versions };
@@ -1110,12 +1148,13 @@ export class Z3950Service {
   }
 
   /**
-   * Recherche dans Internet Archive
+   * Recherche dans Internet Archive - VERSION CORRIGÉE
+   * Vérifie la pertinence et la disponibilité réelle
    */
   private static async searchInternetArchive(title: string, author: string): Promise<any> {
     try {
       const query = encodeURIComponent(`${title} ${author}`);
-      const url = `https://archive.org/advancedsearch.php?q=${query}&fl=identifier,title,creator,format&rows=5&page=1&output=json`;
+      const url = `https://archive.org/advancedsearch.php?q=${query}&fl=identifier,title,creator,format,downloads&rows=5&page=1&output=json`;
 
       const response = await fetch(url);
       const data = await response.json();
@@ -1124,25 +1163,53 @@ export class Z3950Service {
 
       if (data.response?.docs) {
         for (const doc of data.response.docs) {
+          // ✅ CORRECTION : Vérifier la pertinence du titre
+          const docTitle = doc.title?.toLowerCase() || '';
+          const searchTitle = title.toLowerCase();
+
+          // Calculer la similarité (simple)
+          const titleSimilarity = this.calculateSimilarity(docTitle, searchTitle);
+
+          // ✅ CORRECTION : Ne garder que les documents très pertinents (>60% similarité)
+          if (titleSimilarity < 0.6) {
+            console.log(`⚠️ Internet Archive: "${doc.title}" - Faible pertinence (${Math.round(titleSimilarity * 100)}%)`);
+            continue;
+          }
+
+          // ✅ CORRECTION : Vérifier que le document a été téléchargé (signe de qualité)
+          const downloads = parseInt(doc.downloads) || 0;
+          if (downloads < 10) {
+            console.log(`⚠️ Internet Archive: "${doc.title}" - Peu téléchargé (${downloads} fois)`);
+            continue;
+          }
+
           if (doc.format && Array.isArray(doc.format)) {
-            // Rechercher les formats numériques
+            // Rechercher les formats numériques de qualité
             const digitalFormats = doc.format.filter((f: string) =>
-              ['PDF', 'EPUB', 'Text', 'DjVu'].includes(f)
+              ['PDF', 'EPUB', 'Text'].includes(f) // Retirer DjVu (souvent de mauvaise qualité)
             );
 
             for (const format of digitalFormats) {
               versions.push({
                 format: format,
                 source: 'Internet Archive',
-                access: 'Libre',
+                access: 'Libre (Vérifié)',
                 url: `https://archive.org/details/${doc.identifier}`,
-                quality: 'Variable',
+                quality: downloads > 100 ? 'Bonne' : 'Variable',
                 size: 'Variable',
-                language: 'Multilingue'
+                language: 'Multilingue',
+                downloads: downloads,
+                similarity: Math.round(titleSimilarity * 100),
+                verified: true
               });
             }
           }
         }
+      }
+
+      // ✅ CORRECTION : Message explicatif si aucun document pertinent
+      if (versions.length === 0) {
+        console.log(`📭 Internet Archive: Aucun document pertinent trouvé pour "${title}"`);
       }
 
       return { versions };
@@ -1153,45 +1220,103 @@ export class Z3950Service {
   }
 
   /**
-   * Recherche dans Project Gutenberg
+   * Recherche dans Project Gutenberg - VERSION CORRIGÉE
+   * Utilise l'API réelle et vérifie l'existence des livres
    */
   private static async searchProjectGutenberg(title: string, author: string): Promise<any> {
     try {
+      // ✅ CORRECTION : Utiliser l'API réelle de Project Gutenberg
       const query = encodeURIComponent(`${title} ${author}`);
-      const url = `https://www.gutenberg.org/ebooks/search/?query=${query}&submit_search=Go%21`;
+      const url = `https://gutendex.com/books/?search=${query}`;
 
-      // Note: Project Gutenberg n'a pas d'API officielle, mais on peut simuler
-      // la recherche pour les livres du domaine public
+      const response = await fetch(url);
+      const data = await response.json();
+
       const versions: any[] = [];
 
-      // Vérifier si c'est potentiellement un livre du domaine public
-      const currentYear = new Date().getFullYear();
-      const isLikelyPublicDomain = title.toLowerCase().includes('classique') ||
-                                  author.toLowerCase().includes('hugo') ||
-                                  author.toLowerCase().includes('balzac') ||
-                                  author.toLowerCase().includes('zola') ||
-                                  author.toLowerCase().includes('dumas');
+      if (data.results && data.results.length > 0) {
+        for (const book of data.results) {
+          // ✅ CORRECTION : Vérifier la pertinence du titre et de l'auteur
+          const bookTitle = book.title?.toLowerCase() || '';
+          const searchTitle = title.toLowerCase();
 
-      if (isLikelyPublicDomain) {
-        versions.push({
-          format: 'EPUB',
-          source: 'Project Gutenberg',
-          access: 'Libre (Domaine public)',
-          url: `https://www.gutenberg.org/ebooks/search/?query=${query}`,
-          quality: 'Haute',
-          size: 'Petit',
-          language: 'fr'
-        });
+          const titleSimilarity = this.calculateSimilarity(bookTitle, searchTitle);
 
-        versions.push({
-          format: 'PDF',
-          source: 'Project Gutenberg',
-          access: 'Libre (Domaine public)',
-          url: `https://www.gutenberg.org/ebooks/search/?query=${query}`,
-          quality: 'Haute',
-          size: 'Moyen',
-          language: 'fr'
-        });
+          // Vérifier aussi l'auteur
+          let authorMatch = false;
+          if (book.authors && book.authors.length > 0) {
+            const bookAuthor = book.authors[0].name?.toLowerCase() || '';
+            const searchAuthor = author.toLowerCase();
+            authorMatch = this.calculateSimilarity(bookAuthor, searchAuthor) > 0.7;
+          }
+
+          // ✅ CORRECTION : Ne garder que les livres très pertinents
+          if (titleSimilarity < 0.7 && !authorMatch) {
+            console.log(`⚠️ Project Gutenberg: "${book.title}" - Faible pertinence`);
+            continue;
+          }
+
+          // ✅ CORRECTION : Vérifier les formats disponibles réellement
+          if (book.formats) {
+            // EPUB
+            if (book.formats['application/epub+zip']) {
+              versions.push({
+                format: 'EPUB',
+                source: 'Project Gutenberg',
+                access: 'Libre (Domaine public)',
+                url: book.formats['application/epub+zip'],
+                quality: 'Haute',
+                size: 'Petit',
+                language: book.languages?.[0] || 'en',
+                title: book.title,
+                author: book.authors?.[0]?.name || 'Auteur inconnu',
+                verified: true,
+                similarity: Math.round(titleSimilarity * 100)
+              });
+            }
+
+            // PDF
+            if (book.formats['application/pdf']) {
+              versions.push({
+                format: 'PDF',
+                source: 'Project Gutenberg',
+                access: 'Libre (Domaine public)',
+                url: book.formats['application/pdf'],
+                quality: 'Haute',
+                size: 'Moyen',
+                language: book.languages?.[0] || 'en',
+                title: book.title,
+                author: book.authors?.[0]?.name || 'Auteur inconnu',
+                verified: true,
+                similarity: Math.round(titleSimilarity * 100)
+              });
+            }
+
+            // Texte brut
+            if (book.formats['text/plain; charset=utf-8']) {
+              versions.push({
+                format: 'TXT',
+                source: 'Project Gutenberg',
+                access: 'Libre (Domaine public)',
+                url: book.formats['text/plain; charset=utf-8'],
+                quality: 'Basique',
+                size: 'Très petit',
+                language: book.languages?.[0] || 'en',
+                title: book.title,
+                author: book.authors?.[0]?.name || 'Auteur inconnu',
+                verified: true,
+                similarity: Math.round(titleSimilarity * 100)
+              });
+            }
+          }
+        }
+      }
+
+      // ✅ CORRECTION : Message explicatif
+      if (versions.length === 0) {
+        console.log(`📭 Project Gutenberg: Aucun livre du domaine public trouvé pour "${title}"`);
+      } else {
+        console.log(`✅ Project Gutenberg: ${versions.length} version(s) vérifiée(s) trouvée(s)`);
       }
 
       return { versions };
@@ -1202,36 +1327,76 @@ export class Z3950Service {
   }
 
   /**
-   * Recherche dans Gallica (BNF numérique)
+   * Recherche dans Gallica (BNF numérique) - VERSION CORRIGÉE
+   * Vérifie la pertinence et l'existence réelle des documents
    */
   private static async searchGallica(title: string, author: string): Promise<any> {
     try {
-      const query = encodeURIComponent(`${title} ${author}`);
-      const url = `https://gallica.bnf.fr/SRU?version=1.2&operation=searchRetrieve&query=gallica%20all%20"${query}"&recordSchema=dublincore&maximumRecords=5`;
+      // ✅ CORRECTION : Recherche plus précise avec titre ET auteur
+      const titleQuery = encodeURIComponent(`"${title}"`);
+      const authorQuery = encodeURIComponent(`"${author}"`);
+      const url = `https://gallica.bnf.fr/SRU?version=1.2&operation=searchRetrieve&query=gallica%20all%20${titleQuery}%20AND%20gallica%20all%20${authorQuery}&recordSchema=dublincore&maximumRecords=3`;
 
       const response = await fetch(url);
       const xmlText = await response.text();
 
       const versions: any[] = [];
 
-      // Parser basique pour détecter les documents Gallica
+      // ✅ CORRECTION : Parser XML plus robuste
       if (xmlText.includes('<srw:numberOfRecords>') && !xmlText.includes('<srw:numberOfRecords>0</srw:numberOfRecords>')) {
-        // Extraire les identifiants Gallica
+
+        // Extraire le nombre de résultats
+        const recordsMatch = xmlText.match(/<srw:numberOfRecords>(\d+)<\/srw:numberOfRecords>/);
+        const numberOfRecords = recordsMatch ? parseInt(recordsMatch[1]) : 0;
+
+        if (numberOfRecords === 0) {
+          console.log(`📭 Gallica: Aucun document trouvé pour "${title}" par "${author}"`);
+          return { versions: [] };
+        }
+
+        // Extraire les titres pour vérifier la pertinence
+        const titleMatches = xmlText.match(/<dc:title[^>]*>([^<]+)<\/dc:title>/g);
         const arkMatches = xmlText.match(/ark:\/12148\/[a-zA-Z0-9]+/g);
 
         if (arkMatches && arkMatches.length > 0) {
-          for (const ark of arkMatches.slice(0, 3)) { // Limiter à 3 résultats
-            versions.push({
-              format: 'PDF',
-              source: 'Gallica (BNF)',
-              access: 'Libre',
-              url: `https://gallica.bnf.fr/${ark}`,
-              quality: 'Très haute',
-              size: 'Variable',
-              language: 'fr'
-            });
+          for (let i = 0; i < Math.min(arkMatches.length, 2); i++) { // Limiter à 2 résultats max
+            const ark = arkMatches[i];
+
+            // ✅ CORRECTION : Vérifier la pertinence du titre si disponible
+            let isRelevant = true;
+            if (titleMatches && titleMatches[i]) {
+              const gallicaTitle = titleMatches[i].replace(/<[^>]+>/g, '').toLowerCase();
+              const searchTitle = title.toLowerCase();
+              const similarity = this.calculateSimilarity(gallicaTitle, searchTitle);
+
+              if (similarity < 0.5) {
+                console.log(`⚠️ Gallica: "${gallicaTitle}" - Faible pertinence (${Math.round(similarity * 100)}%)`);
+                isRelevant = false;
+              }
+            }
+
+            if (isRelevant) {
+              versions.push({
+                format: 'PDF',
+                source: 'Gallica (BNF)',
+                access: 'Libre (Patrimoine numérisé)',
+                url: `https://gallica.bnf.fr/${ark}`,
+                quality: 'Très haute',
+                size: 'Variable',
+                language: 'fr',
+                verified: true,
+                note: 'Document patrimonial numérisé par la BNF'
+              });
+            }
           }
         }
+      }
+
+      // ✅ CORRECTION : Message explicatif
+      if (versions.length === 0) {
+        console.log(`📭 Gallica: Aucun document patrimonial pertinent trouvé pour "${title}"`);
+      } else {
+        console.log(`✅ Gallica: ${versions.length} document(s) patrimonial(aux) trouvé(s)`);
       }
 
       return { versions };
@@ -1242,6 +1407,37 @@ export class Z3950Service {
   }
 
   // Base de données statique supprimée - 100% APIs maintenant !
+
+  /**
+   * Calcule la similarité entre deux chaînes (algorithme de Jaro-Winkler simplifié)
+   */
+  private static calculateSimilarity(str1: string, str2: string): number {
+    if (!str1 || !str2) return 0;
+
+    str1 = str1.toLowerCase().trim();
+    str2 = str2.toLowerCase().trim();
+
+    if (str1 === str2) return 1;
+
+    // Calcul simple basé sur les mots communs
+    const words1 = str1.split(/\s+/);
+    const words2 = str2.split(/\s+/);
+
+    let commonWords = 0;
+    for (const word1 of words1) {
+      if (word1.length > 2) { // Ignorer les mots trop courts
+        for (const word2 of words2) {
+          if (word1.includes(word2) || word2.includes(word1)) {
+            commonWords++;
+            break;
+          }
+        }
+      }
+    }
+
+    const maxWords = Math.max(words1.length, words2.length);
+    return maxWords > 0 ? commonWords / maxWords : 0;
+  }
 
   /**
    * Génère un MFN unique

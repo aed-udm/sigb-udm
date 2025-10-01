@@ -13,15 +13,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { 
-  AlertTriangle, 
-  DollarSign, 
-  Calendar, 
-  BookOpen, 
+import {
+  AlertTriangle,
+  Calendar,
+  BookOpen,
   User,
   CreditCard,
   X
 } from "lucide-react";
+import { FcfaIcon } from "./fcfa-icon";
 
 interface UnpaidPenalty {
   id: string;
@@ -106,7 +106,7 @@ export function UnpaidPenaltiesDialog({
           <Card className="bg-red-50 dark:bg-red-900/20">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2 text-red-700 dark:text-red-300">
-                <DollarSign className="h-4 w-4" />
+                <FcfaIcon className="h-4 w-4" />
                 Pénalités impayées ({unpaidPenalties.length})
               </CardTitle>
             </CardHeader>

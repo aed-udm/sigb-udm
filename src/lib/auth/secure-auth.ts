@@ -17,9 +17,9 @@ export class SecureAuthManager {
   private static readonly REFRESH_COOKIE_NAME = 'refresh_token';
   
   private static readonly DEFAULT_OPTIONS: SecureAuthOptions = {
-    maxAge: 24 * 60 * 60, // 24 heures
+    maxAge: 4 * 60 * 60, // 4 heures (réduit de 24h pour plus de sécurité)
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict'
+    sameSite: 'strict' // Protection CSRF maximale
   };
 
   /**

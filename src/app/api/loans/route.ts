@@ -187,6 +187,23 @@ export async function POST(request: NextRequest) {
     // Validation des données
     const validatedData = loanSchema.parse(body);
 
+    // 🔒 SÉCURITÉ ANTI-PLAGIAT : Validation côté serveur
+    // Empêcher l'emprunt à domicile pour les documents académiques
+    const isAcademicDocument = ['these', 'memoire', 'rapport_stage'].includes(validatedData.document_type);
+    const isHomeLoan = !body.loan_type || body.loan_type === 'loan'; // Par défaut, c'est un emprunt à domicile
+
+    if (isAcademicDocument && isHomeLoan) {
+      return NextResponse.json(
+        {
+          error: {
+            code: 'HOME_LOAN_NOT_ALLOWED',
+            message: 'Les thèses, mémoires et rapports de stage ne peuvent être consultés qu\'en salle de lecture pour éviter le plagiat.'
+          }
+        },
+        { status: 422 }
+      );
+    }
+
     // Vérification que l'utilisateur existe et est actif
     const users = await executeQuery(
       'SELECT id, full_name, email, barcode, is_active, max_loans FROM users WHERE id = ?',
@@ -472,14 +489,15 @@ export async function POST(request: NextRequest) {
 
     // Créer l'emprunt dans MySQL
     await executeQuery(
-      `INSERT INTO loans (id, user_id, book_id, academic_document_id, document_type, loan_date, due_date, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO loans (id, user_id, book_id, academic_document_id, document_type, loan_type, loan_date, due_date, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         loanId,
         validatedData.user_id,
         validatedData.book_id || null,
         validatedData.academic_document_id || null,
         validatedData.document_type,
+        validatedData.loan_type, // 🔒 SÉCURITÉ : Stocker le type d'emprunt
         validatedData.loan_date || new Date().toISOString().split('T')[0],
         validatedData.due_date,
         'active'

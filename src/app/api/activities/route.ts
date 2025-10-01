@@ -8,14 +8,16 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
 
     // Récupérer les emprunts récents avec informations utilisateur et livre
+    // Ajouter 1 heure pour convertir UTC vers WAT (Cameroun)
     const recentLoans = await executeQuery(`
       SELECT
         l.id,
-        l.loan_date,
-        l.return_date,
+        DATE_ADD(l.loan_date, INTERVAL 1 HOUR) as loan_date,
+        DATE_ADD(l.return_date, INTERVAL 1 HOUR) as return_date,
         l.status,
         u.full_name as user_name,
-        b.title as book_title
+        b.title as book_title,
+        NOW() as current_server_time
       FROM loans l
       JOIN users u ON l.user_id COLLATE utf8mb4_unicode_ci = u.id COLLATE utf8mb4_unicode_ci
       JOIN books b ON l.book_id = b.id
@@ -28,11 +30,15 @@ export async function GET(request: NextRequest) {
       status: string;
       user_name: string;
       book_title: string;
+      current_server_time: string;
     }>;
 
-    // Récupérer les nouveaux utilisateurs récents
+    // Récupérer les nouveaux utilisateurs récents avec timezone correct
     const recentUsers = await executeQuery(`
-      SELECT id, full_name, created_at
+      SELECT
+        id,
+        full_name,
+        DATE_ADD(created_at, INTERVAL 1 HOUR) as created_at
       FROM users
       ORDER BY created_at DESC
       LIMIT ?
@@ -54,6 +60,7 @@ export async function GET(request: NextRequest) {
     // Ajouter les emprunts récents avec calcul de temps correct
     if (recentLoans) {
       recentLoans.forEach((loan) => {
+
         if (loan.status === 'returned' && loan.return_date) {
           // Pour les retours, utiliser la date de retour
           const returnTimeAgo = getTimeAgo(loan.return_date);
@@ -91,6 +98,7 @@ export async function GET(request: NextRequest) {
     // Ajouter les nouveaux utilisateurs avec calcul de temps correct
     if (recentUsers) {
       recentUsers.forEach((user) => {
+
         const userTimeAgo = getTimeAgo(user.created_at);
 
         activities.push({
@@ -128,13 +136,13 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Fonction utilitaire pour calculer le temps écoulé - CORRIGÉE
+// Fonction utilitaire pour calculer le temps écoulé - SOLUTION DÉFINITIVE
 function getTimeAgo(date: Date | string): string {
-  // Normaliser la date d'entrée
+  // Normaliser la date d'entrée (déjà convertie en WAT par la requête SQL)
   let inputDate: Date;
 
   if (typeof date === 'string') {
-    // Gérer les formats de date MySQL (YYYY-MM-DD HH:MM:SS ou YYYY-MM-DD)
+    // Les dates viennent déjà converties de la DB en WAT (UTC+1)
     inputDate = new Date(date);
   } else {
     inputDate = new Date(date);
@@ -145,12 +153,11 @@ function getTimeAgo(date: Date | string): string {
     return "Date invalide";
   }
 
-  // Utiliser UTC pour éviter les problèmes de fuseau horaire
+  // Utiliser l'heure actuelle directement (les dates de la DB sont déjà en WAT)
   const now = new Date();
-  const nowUTC = new Date(now.getTime() + (now.getTimezoneOffset() * 60000));
-  const inputUTC = new Date(inputDate.getTime() + (inputDate.getTimezoneOffset() * 60000));
 
-  const diffInMs = nowUTC.getTime() - inputUTC.getTime();
+  // Calculer la différence en millisecondes
+  const diffInMs = now.getTime() - inputDate.getTime();
 
   // Gérer les dates futures (erreur de données)
   if (diffInMs < 0) {

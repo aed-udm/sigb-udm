@@ -9,6 +9,7 @@ export interface DocumentAvailability {
   total_copies: number;
   active_loans: number;
   active_reservations: number;
+  active_consultations: number; // Consultations en salle de lecture
   available_copies: number; // Calculé dynamiquement
   is_available: boolean;
   next_available_date?: string;
@@ -53,7 +54,8 @@ export class DocumentAvailabilityService {
               b.total_copies,
               COALESCE(loans.active_count, 0) as active_loans,
               COALESCE(reservations.active_count, 0) as active_reservations,
-              GREATEST(0, b.total_copies - COALESCE(loans.active_count, 0) - COALESCE(reservations.active_count, 0)) as available_copies
+              COALESCE(consultations.active_count, 0) as active_consultations,
+              GREATEST(0, b.total_copies - COALESCE(loans.active_count, 0) - COALESCE(reservations.active_count, 0) - COALESCE(consultations.active_count, 0)) as available_copies
             FROM books b
             LEFT JOIN (
               SELECT book_id, COUNT(*) as active_count
@@ -67,6 +69,12 @@ export class DocumentAvailabilityService {
               WHERE status = 'active' AND CAST(book_id AS CHAR) = ?
               GROUP BY book_id
             ) reservations ON CAST(b.id AS CHAR) = CAST(reservations.book_id AS CHAR)
+            LEFT JOIN (
+              SELECT book_id, COUNT(*) as active_count
+              FROM reading_room_consultations
+              WHERE status = 'active' AND CAST(book_id AS CHAR) = ? AND document_type = 'book'
+              GROUP BY book_id
+            ) consultations ON CAST(b.id AS CHAR) = CAST(consultations.book_id AS CHAR)
             WHERE b.id = ?
           `;
           break;
@@ -79,10 +87,11 @@ export class DocumentAvailabilityService {
               'these' as document_type,
               t.title,
               t.main_author as author,
-              1 as total_copies,
+              t.total_copies,
               COALESCE(loans.active_count, 0) as active_loans,
               COALESCE(reservations.active_count, 0) as active_reservations,
-              GREATEST(0, 1 - COALESCE(loans.active_count, 0) - COALESCE(reservations.active_count, 0)) as available_copies
+              COALESCE(consultations.active_count, 0) as active_consultations,
+              GREATEST(0, t.total_copies - COALESCE(loans.active_count, 0) - COALESCE(reservations.active_count, 0) - COALESCE(consultations.active_count, 0)) as available_copies
             FROM theses t
             LEFT JOIN (
               SELECT academic_document_id, COUNT(*) as active_count
@@ -96,6 +105,12 @@ export class DocumentAvailabilityService {
               WHERE status = 'active' AND CAST(academic_document_id AS CHAR) = ? AND document_type = 'these'
               GROUP BY academic_document_id
             ) reservations ON CAST(t.id AS CHAR) = CAST(reservations.academic_document_id AS CHAR)
+            LEFT JOIN (
+              SELECT academic_document_id, COUNT(*) as active_count
+              FROM reading_room_consultations
+              WHERE status = 'active' AND CAST(academic_document_id AS CHAR) = ? AND document_type = 'these'
+              GROUP BY academic_document_id
+            ) consultations ON CAST(t.id AS CHAR) = CAST(consultations.academic_document_id AS CHAR)
             WHERE t.id = ?
           `;
           break;
@@ -108,10 +123,11 @@ export class DocumentAvailabilityService {
               'memoire' as document_type,
               m.title,
               m.main_author as author,
-              1 as total_copies,
+              m.total_copies,
               COALESCE(loans.active_count, 0) as active_loans,
               COALESCE(reservations.active_count, 0) as active_reservations,
-              GREATEST(0, 1 - COALESCE(loans.active_count, 0) - COALESCE(reservations.active_count, 0)) as available_copies
+              COALESCE(consultations.active_count, 0) as active_consultations,
+              GREATEST(0, m.total_copies - COALESCE(loans.active_count, 0) - COALESCE(reservations.active_count, 0) - COALESCE(consultations.active_count, 0)) as available_copies
             FROM memoires m
             LEFT JOIN (
               SELECT academic_document_id, COUNT(*) as active_count
@@ -125,6 +141,12 @@ export class DocumentAvailabilityService {
               WHERE status = 'active' AND CAST(academic_document_id AS CHAR) = ? AND document_type = 'memoire'
               GROUP BY academic_document_id
             ) reservations ON CAST(m.id AS CHAR) = CAST(reservations.academic_document_id AS CHAR)
+            LEFT JOIN (
+              SELECT academic_document_id, COUNT(*) as active_count
+              FROM reading_room_consultations
+              WHERE status = 'active' AND CAST(academic_document_id AS CHAR) = ? AND document_type = 'memoire'
+              GROUP BY academic_document_id
+            ) consultations ON CAST(m.id AS CHAR) = CAST(consultations.academic_document_id AS CHAR)
             WHERE m.id = ?
           `;
           break;
@@ -137,10 +159,11 @@ export class DocumentAvailabilityService {
               'rapport_stage' as document_type,
               s.title,
               s.student_name as author,
-              1 as total_copies,
+              s.total_copies,
               COALESCE(loans.active_count, 0) as active_loans,
               COALESCE(reservations.active_count, 0) as active_reservations,
-              GREATEST(0, 1 - COALESCE(loans.active_count, 0) - COALESCE(reservations.active_count, 0)) as available_copies
+              COALESCE(consultations.active_count, 0) as active_consultations,
+              GREATEST(0, s.total_copies - COALESCE(loans.active_count, 0) - COALESCE(reservations.active_count, 0) - COALESCE(consultations.active_count, 0)) as available_copies
             FROM stage_reports s
             LEFT JOIN (
               SELECT academic_document_id, COUNT(*) as active_count
@@ -154,6 +177,12 @@ export class DocumentAvailabilityService {
               WHERE status = 'active' AND CAST(academic_document_id AS CHAR) = ? AND document_type = 'rapport_stage'
               GROUP BY academic_document_id
             ) reservations ON CAST(s.id AS CHAR) = CAST(reservations.academic_document_id AS CHAR)
+            LEFT JOIN (
+              SELECT academic_document_id, COUNT(*) as active_count
+              FROM reading_room_consultations
+              WHERE status = 'active' AND CAST(academic_document_id AS CHAR) = ? AND document_type = 'rapport_stage'
+              GROUP BY academic_document_id
+            ) consultations ON CAST(s.id AS CHAR) = CAST(consultations.academic_document_id AS CHAR)
             WHERE s.id = ?
           `;
           break;
@@ -162,7 +191,7 @@ export class DocumentAvailabilityService {
           throw new Error(`Type de document non supporté: ${documentType}`);
       }
       
-      const results = await executeQuery(query, [documentId, documentId, documentId]) as Array<{
+      const results = await executeQuery(query, [documentId, documentId, documentId, documentId]) as Array<{
         document_id: string;
         document_type: string;
         title: string;
@@ -170,6 +199,7 @@ export class DocumentAvailabilityService {
         total_copies: number;
         active_loans: number;
         active_reservations: number;
+        active_consultations: number;
         available_copies: number;
       }>;
       
@@ -193,6 +223,7 @@ export class DocumentAvailabilityService {
         total_copies: result.total_copies,
         active_loans: result.active_loans,
         active_reservations: result.active_reservations,
+        active_consultations: result.active_consultations,
         available_copies: result.available_copies,
         is_available: result.available_copies > 0,
         next_available_date: nextAvailableDate

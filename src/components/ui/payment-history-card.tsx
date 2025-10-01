@@ -6,12 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { motion } from "framer-motion";
-import { 
-  CreditCard, 
-  Calendar, 
-  DollarSign, 
-  FileText, 
-  ChevronDown, 
+import {
+  CreditCard,
+  Calendar,
+  FileText,
+  ChevronDown,
   ChevronUp,
   AlertCircle,
   CheckCircle,
@@ -22,6 +21,7 @@ import {
   Building2,
   Gift
 } from "lucide-react";
+import { FcfaIcon } from "./fcfa-icon";
 
 interface PaymentRecord {
   id: string;
@@ -151,7 +151,7 @@ export function PaymentHistoryCard({ userId, userName, className }: PaymentHisto
       <Card className={className}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5 text-green-600" />
+            <FcfaIcon className="h-5 w-5 text-green-600" />
             Historique financier
           </CardTitle>
         </CardHeader>
@@ -169,7 +169,7 @@ export function PaymentHistoryCard({ userId, userName, className }: PaymentHisto
       <Card className={className}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5 text-green-600" />
+            <FcfaIcon className="h-5 w-5 text-green-600" />
             Historique financier
           </CardTitle>
         </CardHeader>
@@ -193,7 +193,7 @@ export function PaymentHistoryCard({ userId, userName, className }: PaymentHisto
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-green-600" />
+              <FcfaIcon className="h-5 w-5 text-green-600" />
               Historique financier
             </CardTitle>
             <Button
@@ -363,7 +363,7 @@ export function PaymentHistoryCard({ userId, userName, className }: PaymentHisto
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <CreditCard className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <FcfaIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-500 dark:text-gray-400">
                     Aucun paiement enregistré
                   </p>

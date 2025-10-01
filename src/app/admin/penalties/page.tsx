@@ -6,7 +6,6 @@ import {
   AlertTriangle,
   Save,
   RefreshCw,
-  DollarSign,
   Calendar,
   Clock,
   BookOpen,
@@ -18,6 +17,7 @@ import {
   CheckCircle,
   XCircle
 } from "lucide-react";
+import { FcfaIcon } from "@/components/ui/fcfa-icon";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -251,7 +251,7 @@ export default function PenaltiesSettingsPage() {
                     transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
                     className="absolute -inset-1 sm:-inset-2"
                   >
-                    <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 dark:text-green-400 absolute top-0 right-0" />
+                    <FcfaIcon className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 dark:text-green-400 absolute top-0 right-0" />
                     <Clock className="h-2 w-2 sm:h-3 sm:w-3 text-gray-600 dark:text-gray-400 absolute bottom-0 left-0" />
                   </motion.div>
                 </motion.div>
@@ -379,7 +379,7 @@ export default function PenaltiesSettingsPage() {
                       {/* Taux journalier */}
                       <div className="space-y-2">
                         <Label htmlFor={`daily-rate-${setting.document_type}`} className="flex items-center space-x-2">
-                          <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
+                          <FcfaIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
                           <span>Taux journalier (FCFA)</span>
                         </Label>
                         <Input

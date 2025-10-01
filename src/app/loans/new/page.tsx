@@ -60,6 +60,16 @@ export default function NewLoanPage() {
   const [selectedAcademicDocuments, setSelectedAcademicDocuments] = useState<AcademicDocument[]>([]);
   const [documentType, setDocumentType] = useState<'book' | 'these' | 'memoire' | 'rapport_stage'>('book');
   const [loanType, setLoanType] = useState<'loan' | 'reading_room'>('loan');
+
+  // Protection anti-plagiat : Vérifier si l'emprunt à domicile est autorisé pour le type de document
+  const isHomeLoanAllowed = documentType === 'book';
+
+  // Protection : Forcer la lecture sur place pour les documents académiques
+  useEffect(() => {
+    if (!isHomeLoanAllowed && loanType === 'loan') {
+      setLoanType('reading_room');
+    }
+  }, [documentType, isHomeLoanAllowed, loanType]);
   const [readingLocation, setReadingLocation] = useState('Salle de lecture principale');
   const [userSearch, setUserSearch] = useState("");
   const [bookSearch, setBookSearch] = useState("");
@@ -473,6 +483,7 @@ export default function NewLoanPage() {
             const requestBody = {
               user_id: selectedUser.id,
               document_type: documentType,
+              loan_type: loanType, // Protection : Inclure le type d'emprunt
               due_date: dueDate,
               book_id: book.id,
             };
@@ -487,6 +498,7 @@ export default function NewLoanPage() {
             const requestBody = {
               user_id: selectedUser.id,
               document_type: documentType,
+              loan_type: loanType, // Protection : Inclure le type d'emprunt (forcé à 'reading_room')
               due_date: dueDate,
               academic_document_id: doc.id,
             };
@@ -606,11 +618,17 @@ export default function NewLoanPage() {
                         key={type.value}
                         type="button"
                         onClick={() => {
-                          setDocumentType(type.value as any);
+                          const newDocType = type.value as 'book' | 'these' | 'memoire' | 'rapport_stage';
+                          setDocumentType(newDocType);
                           setSelectedBooks([]);
                           setSelectedAcademicDocuments([]);
                           setBookSearch("");
                           setAcademicSearch("");
+
+                          // Protection anti-plagiat : Forcer la lecture sur place pour les documents académiques
+                          if (newDocType !== 'book') {
+                            setLoanType('reading_room');
+                          }
                         }}
                         className={`p-4 border-2 rounded-lg text-center transition-all hover:shadow-md ${
                           documentType === type.value
@@ -696,7 +714,7 @@ export default function NewLoanPage() {
                               <p className="font-medium">{user.full_name}</p>
                               <p className="text-sm text-gray-500">{user.email}</p>
                               <p className="text-xs text-gray-400">
-                                {user.matricule} • Max: {user.max_loans} emprunts
+                                {(user as any).matricule || user.barcode} • Max: {user.max_loans} emprunts
                               </p>
                             </div>
                           ))
@@ -955,25 +973,64 @@ export default function NewLoanPage() {
                   {/* Type d'opération */}
                   <div className="mb-6">
                     <Label className="text-base font-medium">Type d'opération</Label>
+                    {!isHomeLoanAllowed && (
+                      <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">!</span>
+                          </div>
+                          <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">
+                            Protection anti-plagiat : Les {
+                              documentType === 'these' ? 'thèses' :
+                              documentType === 'memoire' ? 'mémoires' :
+                              'rapports de stage'
+                            } ne peuvent être consultés qu'en salle de lecture.
+                          </p>
+                        </div>
+                      </div>
+                    )}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                       <div
-                        className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                          loanType === 'loan'
-                            ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                        className={`p-4 border-2 rounded-lg transition-all ${
+                          !isHomeLoanAllowed
+                            ? 'border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 cursor-not-allowed opacity-50'
+                            : `cursor-pointer ${
+                                loanType === 'loan'
+                                  ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                                  : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                              }`
                         }`}
-                        onClick={() => setLoanType('loan')}
+                        onClick={() => isHomeLoanAllowed && setLoanType('loan')}
                       >
                         <div className="flex items-center space-x-3">
                           <div className={`w-4 h-4 rounded-full border-2 ${
-                            loanType === 'loan' ? 'border-green-500 bg-green-500' : 'border-gray-300 dark:border-gray-600'
+                            !isHomeLoanAllowed
+                              ? 'border-gray-400 bg-gray-300 dark:border-gray-500 dark:bg-gray-600'
+                              : loanType === 'loan'
+                                ? 'border-green-500 bg-green-500'
+                                : 'border-gray-300 dark:border-gray-600'
                           }`}>
-                            {loanType === 'loan' && <div className="w-2 h-2 bg-white rounded-full mx-auto mt-0.5"></div>}
+                            {loanType === 'loan' && isHomeLoanAllowed && <div className="w-2 h-2 bg-white rounded-full mx-auto mt-0.5"></div>}
+                            {!isHomeLoanAllowed && <div className="w-2 h-2 bg-red-500 rounded-full mx-auto mt-0.5"></div>}
                           </div>
                           <div>
-                            <h4 className="font-medium text-gray-900 dark:text-white">Emprunt à domicile</h4>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              L'usager emporte le document chez lui
+                            <h4 className={`font-medium ${
+                              !isHomeLoanAllowed
+                                ? 'text-gray-500 dark:text-gray-400'
+                                : 'text-gray-900 dark:text-white'
+                            }`}>
+                              Emprunt à domicile
+                              {!isHomeLoanAllowed && <span className="ml-2 text-red-500 text-xs">[BLOQUÉ]</span>}
+                            </h4>
+                            <p className={`text-sm ${
+                              !isHomeLoanAllowed
+                                ? 'text-gray-400 dark:text-gray-500'
+                                : 'text-gray-600 dark:text-gray-400'
+                            }`}>
+                              {!isHomeLoanAllowed
+                                ? 'Non autorisé pour ce type de document'
+                                : 'L\'usager emporte le document chez lui'
+                              }
                             </p>
                           </div>
                         </div>

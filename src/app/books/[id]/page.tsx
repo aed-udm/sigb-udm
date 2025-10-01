@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback } from "react";
 import { useReliableRefresh } from '@/hooks/useReliableRefresh';
 import { useParams, useRouter } from "next/navigation";
 import { motion } from 'framer-motion';
-import { ArrowLeft, Edit, Trash2, BookOpen, User, Building, Calendar, DollarSign, Package, FileText, Download, Tag } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, BookOpen, User, Building, Calendar, Package, FileText, Download, Tag } from "lucide-react";
 import Link from "next/link";
+import { FcfaIcon } from "@/components/ui/fcfa-icon";
 
 import { Button } from "@/components/ui/button";
 import { DarkModeButton } from "@/components/ui/dark-mode-button";
@@ -616,7 +617,7 @@ export default function BookDetailPage() {
                   {/* Informations d'acquisition */}
                   <div>
                     <h3 className="text-lg font-semibold mb-4 flex items-center">
-                      <DollarSign className="h-5 w-5 mr-2 text-green-600" />
+                      <FcfaIcon className="h-5 w-5 mr-2 text-green-600" />
                       Acquisition et Gestion
                     </h3>
                     <div className="space-y-2 text-sm">

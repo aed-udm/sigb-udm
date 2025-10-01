@@ -341,18 +341,23 @@ export function Z3950ImportDialog({ onImportSuccess, trigger }: Z3950ImportDialo
                   <div>
                     <Label className="text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center gap-2">
                       <FileText className="h-4 w-4" />
-                      Versions numériques disponibles ({searchResult.book.digital_versions.totalFound})
+                      Versions numériques vérifiées ({searchResult.book.digital_versions.totalFound})
                     </Label>
-                    <div className="mt-2 space-y-2">
+
+
+
+                    <div className="mt-3 space-y-2">
                       {searchResult.book.digital_versions.versions.slice(0, 5).map((version: any, index: number) => (
-                        <div key={index} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border">
                           <div className="flex items-center gap-2">
                             <Badge variant="outline" className="text-xs">
                               {version.format}
                             </Badge>
-                            <span className="text-sm font-medium">{version.source}</span>
+                            <Badge variant="secondary" className="text-xs">
+                              {version.source}
+                            </Badge>
                             <Badge
-                              variant={version.access === 'Libre' ? 'default' : 'secondary'}
+                              variant={version.access?.includes('Libre') ? 'success' : 'secondary'}
                               className="text-xs"
                             >
                               {version.access}
@@ -364,6 +369,7 @@ export function Z3950ImportDialog({ onImportSuccess, trigger }: Z3950ImportDialo
                               size="sm"
                               onClick={() => window.open(version.url, '_blank')}
                               className="h-6 px-2"
+                              title={`Ouvrir ${version.format} depuis ${version.source}`}
                             >
                               <ExternalLink className="h-3 w-3" />
                             </Button>
@@ -372,20 +378,26 @@ export function Z3950ImportDialog({ onImportSuccess, trigger }: Z3950ImportDialo
                       ))}
                       {searchResult.book.digital_versions.totalFound > 5 && (
                         <p className="text-xs text-gray-500 text-center">
-                          ... et {searchResult.book.digital_versions.totalFound - 5} autres versions
+                          ... et {searchResult.book.digital_versions.totalFound - 5} autres versions vérifiées
                         </p>
                       )}
                     </div>
+
+
                   </div>
                 )}
 
                 {/* Message si aucune version numérique */}
                 {searchResult.book.digital_versions && searchResult.book.digital_versions.totalFound === 0 && (
-                  <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-                    <p className="text-sm text-yellow-700 dark:text-yellow-300 flex items-center gap-2">
+                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <p className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2 font-medium mb-2">
                       <FileText className="h-4 w-4" />
-                      Aucune version numérique trouvée pour ce livre
+                      Aucune version numérique complète trouvée
                     </p>
+                    <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                      <p>• Ce livre n'est pas disponible gratuitement en version numérique</p>
+                      <p>• Consultez votre bibliothèque locale pour d'autres options</p>
+                    </div>
                   </div>
                 )}
 

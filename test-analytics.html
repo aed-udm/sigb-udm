@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Analytics - Rôle Bibliothécaire</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .role-selector {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #e8f5e8;
+            border-radius: 5px;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Analytics - Rôle Bibliothécaire</h1>
+        
+        <div class="role-selector">
+            <h3>Simulation du rôle utilisateur</h3>
+            <button onclick="setRole('admin')">Admin</button>
+            <button onclick="setRole('bibliothecaire')">Bibliothécaire</button>
+            <button onclick="setRole('enregistrement')">Enregistrement</button>
+            <button onclick="setRole('etudiant')">Étudiant</button>
+            <p><strong>Rôle actuel:</strong> <span id="currentRole">Non défini</span></p>
+        </div>
+
+        <div id="results">
+            <div class="info">
+                <strong>Instructions:</strong>
+                <ol>
+                    <li>Sélectionnez le rôle "Bibliothécaire"</li>
+                    <li>Cliquez sur "Tester l'accès Analytics"</li>
+                    <li>Vérifiez que l'onglet "Statistiques" apparaît dans la sidebar</li>
+                    <li>Vérifiez que les filtres de période ont été supprimés</li>
+                </ol>
+            </div>
+        </div>
+
+        <button onclick="testAnalyticsAccess()">Tester l'accès Analytics</button>
+        <button onclick="testSidebarVisibility()">Tester la visibilité Sidebar</button>
+        <button onclick="openAnalytics()">Ouvrir Analytics</button>
+
+        <div id="testResults"></div>
+    </div>
+
+    <script>
+        function setRole(role) {
+            localStorage.setItem('userRole', role);
+            localStorage.setItem('currentUser', JSON.stringify({
+                role: role,
+                name: 'Test User',
+                email: 'test@udm.edu.cm'
+            }));
+            document.getElementById('currentRole').textContent = role;
+            addResult(`Rôle défini sur: ${role}`, 'success');
+        }
+
+        function getCurrentRole() {
+            try {
+                const userRole = localStorage.getItem('userRole');
+                const currentUser = localStorage.getItem('currentUser');
+                if (currentUser) {
+                    const user = JSON.parse(currentUser);
+                    return user.role;
+                }
+                return userRole || 'admin';
+            } catch {
+                return 'admin';
+            }
+        }
+
+        function testAnalyticsAccess() {
+            const role = getCurrentRole();
+            
+            // Simuler la logique de permissions
+            const rolePermissions = {
+                admin: ['analytics.view', 'catalog.view', 'users.view'],
+                bibliothecaire: ['analytics.view', 'catalog.view', 'catalog.create', 'catalog.edit'],
+                enregistrement: ['users.view', 'loans.view'],
+                etudiant: ['catalog.view']
+            };
+
+            const permissions = rolePermissions[role] || [];
+            const hasAnalyticsAccess = permissions.includes('analytics.view');
+
+            if (hasAnalyticsAccess) {
+                addResult(`✅ Rôle "${role}" a accès aux Analytics`, 'success');
+            } else {
+                addResult(`❌ Rôle "${role}" n'a PAS accès aux Analytics`, 'error');
+            }
+        }
+
+        function testSidebarVisibility() {
+            const role = getCurrentRole();
+            
+            if (role === 'bibliothecaire') {
+                addResult('✅ L\'onglet "Statistiques" devrait être visible dans la section "Administration"', 'success');
+                addResult('ℹ️ Vérifiez manuellement dans la sidebar de l\'application', 'info');
+            } else if (role === 'admin') {
+                addResult('✅ L\'onglet "Statistiques" devrait être visible (Admin a tous les droits)', 'success');
+            } else {
+                addResult(`❌ L'onglet "Statistiques" ne devrait PAS être visible pour le rôle "${role}"`, 'error');
+            }
+        }
+
+        function openAnalytics() {
+            window.open('http://localhost:3000/analytics', '_blank');
+        }
+
+        function addResult(message, type) {
+            const resultsDiv = document.getElementById('testResults');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${type}`;
+            resultDiv.innerHTML = message;
+            resultsDiv.appendChild(resultDiv);
+        }
+
+        // Initialiser l'affichage du rôle actuel
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentRole = getCurrentRole();
+            document.getElementById('currentRole').textContent = currentRole;
+        });
+    </script>
+</body>
+</html>

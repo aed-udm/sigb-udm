@@ -71,6 +71,36 @@ export function truncateText(text: string, maxLength: number): string {
   return text.substring(0, maxLength) + '...'
 }
 
+// Fonction de sécurité pour nettoyer les entrées utilisateur
+export function sanitizeInput(input: string): string {
+  if (!input) return input;
+
+  return input
+    .replace(/[<>]/g, '') // Supprimer les balises HTML
+    .replace(/javascript:/gi, '') // Supprimer les liens javascript
+    .replace(/on\w+=/gi, '') // Supprimer les handlers d'événements
+    .replace(/script/gi, '') // Supprimer le mot "script"
+    .trim();
+}
+
+// Validation sécurisée des UUIDs
+export function isValidUUID(uuid: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(uuid);
+}
+
+// Détection de tentatives d'injection SQL
+export function containsSQLInjection(input: string): boolean {
+  const sqlPatterns = [
+    /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION)\b)/i,
+    /(\b(OR|AND)\s+\d+\s*=\s*\d+)/i,
+    /(--|\/\*|\*\/)/,
+    /(\b(SCRIPT|JAVASCRIPT|VBSCRIPT)\b)/i
+  ];
+
+  return sqlPatterns.some(pattern => pattern.test(input));
+}
+
 export function capitalizeFirstLetter(string: string): string {
   return string.charAt(0).toUpperCase() + string.slice(1)
 }

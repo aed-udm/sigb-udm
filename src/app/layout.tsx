@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+// import { Inter, JetBrains_Mono } from "next/font/google"; // Temporairement désactivé
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { FontFallbackDetector } from "@/components/ui/font-fallback-detector";
@@ -8,21 +8,11 @@ import { FontFallbackDetector } from "@/components/ui/font-fallback-detector";
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-sans",
-  fallback: ["system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
-  display: "swap",
-  preload: true,
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-  fallback: ["Consolas", "Monaco", "Courier New", "monospace"],
-  display: "swap",
-  preload: true,
-});
+// Configuration temporaire avec polices système uniquement
+const systemFonts = {
+  sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+  mono: "Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', 'Courier New', monospace"
+};
 
 export const metadata: Metadata = {
   title: "Système de Gestion de Bibliothèque de l'Université des Montagnes",
@@ -51,7 +41,8 @@ export default function RootLayout({
   return (
     <html lang="fr" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${jetbrainsMono.variable} antialiased min-h-screen bg-gradient-to-br from-gray-50 to-green-50 dark:from-gray-900 dark:to-gray-800 font-sans overflow-x-hidden text-gray-900 dark:text-gray-100`}
+        className="antialiased min-h-screen bg-gradient-to-br from-gray-50 to-green-50 dark:from-gray-900 dark:to-gray-800 font-sans overflow-x-hidden text-gray-900 dark:text-gray-100"
+        style={{ fontFamily: systemFonts.sans }}
       >
         <FontFallbackDetector>
           <Providers>

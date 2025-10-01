@@ -72,6 +72,7 @@ const ROLE_CONFIG: Record<UserRole, Omit<UserRoleData, 'canAccess'>> = {
     permissions: [
       'catalog.view', 'catalog.create', 'catalog.edit',
       'dashboard.view',
+      'analytics.view',
       'profile.view', 'profile.edit'
     ]
   },

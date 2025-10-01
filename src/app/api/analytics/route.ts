@@ -9,34 +9,16 @@ import { executeQuery } from '@/lib/mysql';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const period = searchParams.get('period') || '6months';
     const selectedMonth = searchParams.get('month');
 
-    // Déterminer la période SQL selon le paramètre
+    // Condition pour filtrer par mois spécifique si sélectionné
     let periodCondition = '';
-    let monthsBack = 6;
-    
-    switch (period) {
-      case '1month':
-        monthsBack = 1;
-        break;
-      case '3months':
-        monthsBack = 3;
-        break;
-      case '6months':
-        monthsBack = 6;
-        break;
-      case '1year':
-        monthsBack = 12;
-        break;
-    }
+    let monthsBack = 12; // Par défaut, on prend les 12 derniers mois pour les graphiques
 
-    // Si un mois spécifique est sélectionné
     if (selectedMonth) {
       periodCondition = `AND DATE_FORMAT(loan_date, '%Y-%m') = '${selectedMonth}'`;
-    } else {
-      periodCondition = `AND loan_date >= DATE_SUB(NOW(), INTERVAL ${monthsBack} MONTH)`;
     }
+    // Sinon, on prend toutes les données (pas de filtre de période global)
 
     // Statistiques de base étendues
     const [basicStats] = await executeQuery(`
@@ -66,10 +48,10 @@ export async function GET(request: NextRequest) {
         COUNT(DISTINCT user_id) as unique_users,
         COUNT(DISTINCT book_id) as unique_books
       FROM loans
-      WHERE loan_date >= DATE_SUB(NOW(), INTERVAL ${monthsBack} MONTH)
+      WHERE 1=1 ${periodCondition}
       GROUP BY DATE_FORMAT(loan_date, '%Y-%m')
       ORDER BY month DESC
-      LIMIT ${monthsBack}
+      LIMIT 12
     `) as any[];
 
     // Ajouts mensuels de collections
@@ -85,7 +67,7 @@ export async function GET(request: NextRequest) {
           COUNT(*) as books,
           0 as academic
         FROM books
-        WHERE created_at >= DATE_SUB(NOW(), INTERVAL ${monthsBack} MONTH)
+        WHERE 1=1 ${selectedMonth ? `AND DATE_FORMAT(created_at, '%Y-%m') = '${selectedMonth}'` : ''}
         GROUP BY DATE_FORMAT(created_at, '%Y-%m')
 
         UNION ALL
@@ -95,7 +77,7 @@ export async function GET(request: NextRequest) {
           0 as books,
           COUNT(*) as academic
         FROM theses
-        WHERE created_at >= DATE_SUB(NOW(), INTERVAL ${monthsBack} MONTH)
+        WHERE 1=1 ${selectedMonth ? `AND DATE_FORMAT(created_at, '%Y-%m') = '${selectedMonth}'` : ''}
         GROUP BY DATE_FORMAT(created_at, '%Y-%m')
 
         UNION ALL
@@ -105,7 +87,7 @@ export async function GET(request: NextRequest) {
           0 as books,
           COUNT(*) as academic
         FROM memoires
-        WHERE created_at >= DATE_SUB(NOW(), INTERVAL ${monthsBack} MONTH)
+        WHERE 1=1 ${selectedMonth ? `AND DATE_FORMAT(created_at, '%Y-%m') = '${selectedMonth}'` : ''}
         GROUP BY DATE_FORMAT(created_at, '%Y-%m')
 
         UNION ALL
@@ -115,12 +97,12 @@ export async function GET(request: NextRequest) {
           0 as books,
           COUNT(*) as academic
         FROM stage_reports
-        WHERE created_at >= DATE_SUB(NOW(), INTERVAL ${monthsBack} MONTH)
+        WHERE 1=1 ${selectedMonth ? `AND DATE_FORMAT(created_at, '%Y-%m') = '${selectedMonth}'` : ''}
         GROUP BY DATE_FORMAT(created_at, '%Y-%m')
       ) combined
       GROUP BY month
       ORDER BY month DESC
-      LIMIT ${monthsBack}
+      LIMIT 12
     `) as any[];
 
     // Statistiques détaillées par type de document
@@ -162,7 +144,7 @@ export async function GET(request: NextRequest) {
         COUNT(DISTINCT b.id) as books_count,
         ROUND(COUNT(l.id) / COUNT(DISTINCT b.id), 2) as avg_loans_per_book
       FROM books b
-      LEFT JOIN loans l ON b.id = l.book_id ${selectedMonth ? `AND DATE_FORMAT(l.loan_date, '%Y-%m') = '${selectedMonth}'` : `AND l.loan_date >= DATE_SUB(NOW(), INTERVAL ${monthsBack} MONTH)`}
+      LEFT JOIN loans l ON b.id = l.book_id ${selectedMonth ? `AND DATE_FORMAT(l.loan_date, '%Y-%m') = '${selectedMonth}'` : ''}
       GROUP BY b.domain
       HAVING loans_count > 0
       ORDER BY loans_count DESC
@@ -176,7 +158,7 @@ export async function GET(request: NextRequest) {
         COUNT(*) as user_count,
         COUNT(CASE WHEN is_active = 1 THEN 1 END) as active_count,
         AVG(CASE WHEN is_active = 1 THEN (
-          SELECT COUNT(*) FROM loans WHERE user_id = users.id ${selectedMonth ? `AND DATE_FORMAT(loan_date, '%Y-%m') = '${selectedMonth}'` : `AND loan_date >= DATE_SUB(NOW(), INTERVAL ${monthsBack} MONTH)`}
+          SELECT COUNT(*) FROM loans WHERE user_id = users.id ${selectedMonth ? `AND DATE_FORMAT(loan_date, '%Y-%m') = '${selectedMonth}'` : ''}
         ) END) as avg_loans_per_user
       FROM users
       GROUP BY account_status
@@ -193,7 +175,7 @@ export async function GET(request: NextRequest) {
         COUNT(CASE WHEN fine_amount > 0 THEN 1 END) as loans_with_fines
       FROM loans 
       WHERE status = 'overdue' OR fine_amount > 0
-      ${selectedMonth ? `AND DATE_FORMAT(loan_date, '%Y-%m') = '${selectedMonth}'` : `AND loan_date >= DATE_SUB(NOW(), INTERVAL ${monthsBack} MONTH)`}
+      ${selectedMonth ? `AND DATE_FORMAT(loan_date, '%Y-%m') = '${selectedMonth}'` : ''}
     `) as any[];
 
     // Livres populaires avec filtrage par période
@@ -209,7 +191,7 @@ export async function GET(request: NextRequest) {
           b.status,
           ROUND(COUNT(l.id) / NULLIF((SELECT COUNT(*) FROM loans WHERE book_id = b.id), 0) * 100, 2) as popularity_score
         FROM books b
-        LEFT JOIN loans l ON b.id = l.book_id ${selectedMonth ? `AND DATE_FORMAT(l.loan_date, '%Y-%m') = '${selectedMonth}'` : `AND l.loan_date >= DATE_SUB(NOW(), INTERVAL ${monthsBack} MONTH)`}
+        LEFT JOIN loans l ON b.id = l.book_id ${selectedMonth ? `AND DATE_FORMAT(l.loan_date, '%Y-%m') = '${selectedMonth}'` : ''}
         GROUP BY b.id, b.title, b.main_author, b.domain, b.status
         ORDER BY loans_count DESC
         LIMIT 10
@@ -233,7 +215,7 @@ export async function GET(request: NextRequest) {
           COUNT(CASE WHEN l.status = 'overdue' THEN 1 END) as overdue_count,
           SUM(COALESCE(l.fine_amount, 0)) as total_fines
         FROM users u
-        LEFT JOIN loans l ON u.id = l.user_id ${selectedMonth ? `AND DATE_FORMAT(l.loan_date, '%Y-%m') = '${selectedMonth}'` : `AND l.loan_date >= DATE_SUB(NOW(), INTERVAL ${monthsBack} MONTH)`}
+        LEFT JOIN loans l ON u.id = l.user_id ${selectedMonth ? `AND DATE_FORMAT(l.loan_date, '%Y-%m') = '${selectedMonth}'` : ''}
         WHERE u.is_active = 1
         GROUP BY u.id, u.full_name, u.email, u.account_status
         ORDER BY loans_count DESC
@@ -256,7 +238,7 @@ export async function GET(request: NextRequest) {
           b.domain as category,
           b.status
         FROM books b
-        LEFT JOIN reservations r ON b.id = r.book_id ${selectedMonth ? `AND DATE_FORMAT(r.reservation_date, '%Y-%m') = '${selectedMonth}'` : `AND r.reservation_date >= DATE_SUB(NOW(), INTERVAL ${monthsBack} MONTH)`}
+        LEFT JOIN reservations r ON b.id = r.book_id ${selectedMonth ? `AND DATE_FORMAT(r.reservation_date, '%Y-%m') = '${selectedMonth}'` : ''}
         WHERE r.id IS NOT NULL
         GROUP BY b.id, b.title, b.main_author, b.domain, b.status
         ORDER BY reservations_count DESC
@@ -406,11 +388,11 @@ export async function GET(request: NextRequest) {
           COALESCE(b.domain, 'Non classé') as category,
           COUNT(DISTINCT b.id) as books_count,
           COUNT(l.id) as loans_count,
-          ROUND((COUNT(l.id) * 100.0 / NULLIF((SELECT COUNT(*) FROM loans ${selectedMonth ? `WHERE DATE_FORMAT(loan_date, '%Y-%m') = '${selectedMonth}'` : `WHERE loan_date >= DATE_SUB(NOW(), INTERVAL ${monthsBack} MONTH)`}), 0)), 2) as percentage,
+          ROUND((COUNT(l.id) * 100.0 / NULLIF((SELECT COUNT(*) FROM loans ${selectedMonth ? `WHERE DATE_FORMAT(loan_date, '%Y-%m') = '${selectedMonth}'` : ''}), 0)), 2) as percentage,
           COUNT(DISTINCT l.user_id) as unique_borrowers,
           AVG(CASE WHEN l.return_date IS NOT NULL THEN DATEDIFF(l.return_date, l.loan_date) END) as avg_loan_duration
         FROM books b
-        LEFT JOIN loans l ON b.id = l.book_id ${selectedMonth ? `AND DATE_FORMAT(l.loan_date, '%Y-%m') = '${selectedMonth}'` : `AND l.loan_date >= DATE_SUB(NOW(), INTERVAL ${monthsBack} MONTH)`}
+        LEFT JOIN loans l ON b.id = l.book_id ${selectedMonth ? `AND DATE_FORMAT(l.loan_date, '%Y-%m') = '${selectedMonth}'` : ''}
         GROUP BY b.domain
         ORDER BY loans_count DESC
         LIMIT 12
@@ -620,9 +602,7 @@ export async function GET(request: NextRequest) {
       success: true,
       data: analyticsData,
       meta: {
-        period: period,
         selected_month: selectedMonth,
-        months_back: monthsBack,
         generated_at: new Date().toISOString()
       }
     });

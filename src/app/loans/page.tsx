@@ -21,7 +21,6 @@ import {
   Loader2,
   AlertTriangle,
   RefreshCw,
-  DollarSign,
   Calculator,
   CreditCard,
   Eye,
@@ -45,6 +44,7 @@ import { useToast } from "@/hooks/use-toast";
 import { UnifiedStatCard } from "@/components/ui/instant-components";
 import { OverdueReturnDialog } from "@/components/ui/overdue-return-dialog";
 import { UnpaidPenaltiesDialog } from "@/components/ui/unpaid-penalties-dialog";
+import { FcfaIcon } from "@/components/ui/fcfa-icon";
 
 interface Loan {
   id: string;
@@ -206,7 +206,7 @@ export default function LoansPage() {
       if (searchTerm) params.append('search', searchTerm);
       if (statusFilter) params.append('status', statusFilter);
 
-      const response = await fetch(`/api/loans/export?${params.toString()}`);
+      const response = await fetch(`/api/export-operations?${params.toString()}`);
 
       if (response.ok) {
         const htmlContent = await response.text();
@@ -1254,7 +1254,7 @@ export default function LoansPage() {
                           <div className="mt-4 p-3 bg-red-50 dark:bg-red-800/90 border border-red-200 dark:border-red-800 rounded-lg">
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
                               <div className="flex items-center space-x-2">
-                                <DollarSign className="h-4 w-4 text-red-600 dark:text-red-400" />
+                                <FcfaIcon className="h-4 w-4 text-red-600 dark:text-red-400" />
                                 <span className="text-sm font-medium text-red-800 dark:text-red-200">
                                   Pénalité: {parseFloat(loan.fine_amount.toString()).toLocaleString()} FCFA
                                 </span>

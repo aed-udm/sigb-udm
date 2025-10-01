@@ -333,56 +333,69 @@ export default function ServiceDiplomesPage() {
                         className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all duration-200 cursor-pointer"
                       >
                         <Link href={`/archives/diplomes/${student.id}`}>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-4">
-                              <div className="p-2 bg-green-100 dark:bg-green-800/90 rounded-lg">
-                                <User className="h-5 w-5 text-green-600" />
+                          {/* Layout responsive pour les cartes étudiants */}
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                            {/* Informations principales */}
+                            <div className="flex items-start space-x-3 flex-1 min-w-0">
+                              <div className="p-2 bg-green-100 dark:bg-green-800/90 rounded-lg flex-shrink-0">
+                                <User className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center space-x-3 mb-1">
-                                  <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+                                {/* Nom et badges */}
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                                  <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base line-clamp-1">
                                     {student.full_name}
                                   </h3>
-                                  <Badge variant={student.is_active ? "default" : "secondary"}>
-                                    {student.is_active ? 'Actif' : 'Inactif'}
-                                  </Badge>
-                                  {student.documents_count > 0 && (
-                                    <Badge variant="outline" className="text-green-600 border-green-600">
-                                      {student.documents_count} docs
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <Badge variant={student.is_active ? "default" : "secondary"} className="text-xs">
+                                      {student.is_active ? 'Actif' : 'Inactif'}
                                     </Badge>
-                                  )}
+                                    {student.documents_count > 0 && (
+                                      <Badge variant="outline" className="text-green-600 border-green-600 text-xs">
+                                        {student.documents_count} docs
+                                      </Badge>
+                                    )}
+                                  </div>
                                 </div>
-                                <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
-                                  <span className="flex items-center">
-                                    <Mail className="h-3 w-3 mr-1" />
-                                    {student.email}
+
+                                {/* Métadonnées - Layout responsive */}
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                                  <span className="flex items-center break-all">
+                                    <Mail className="h-3 w-3 mr-1 flex-shrink-0" />
+                                    <span className="truncate">{student.email}</span>
                                   </span>
                                   {student.matricule && (
-                                    <span className="flex items-center">
-                                      <Award className="h-3 w-3 mr-1" />
-                                      {student.matricule}
-                                    </span>
+                                    <>
+                                      <span className="hidden sm:inline">•</span>
+                                      <span className="flex items-center">
+                                        <Award className="h-3 w-3 mr-1 flex-shrink-0" />
+                                        {student.matricule}
+                                      </span>
+                                    </>
                                   )}
+                                  <span className="hidden sm:inline">•</span>
                                   <span className="flex items-center">
-                                    <Calendar className="h-3 w-3 mr-1" />
+                                    <Calendar className="h-3 w-3 mr-1 flex-shrink-0" />
                                     {new Date(student.created_at).toLocaleDateString('fr-FR')}
                                   </span>
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center space-x-2">
-                              <div className="text-right text-sm">
+
+                            {/* Informations de taille et navigation */}
+                            <div className="flex items-center justify-between sm:justify-end space-x-2 flex-shrink-0">
+                              <div className="text-left sm:text-right text-sm">
                                 <div className="font-medium text-gray-900 dark:text-white">
                                   {student.folder_size && !isNaN(student.folder_size) ?
                                     `${student.folder_size.toFixed(2)} MB` :
                                     '0 MB'
                                   }
                                 </div>
-                                <div className="text-gray-600 dark:text-gray-300">
+                                <div className="text-gray-600 dark:text-gray-300 text-xs">
                                   Taille dossier
                                 </div>
                               </div>
-                              <ChevronRight className="h-5 w-5 text-gray-400" />
+                              <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 flex-shrink-0" />
                             </div>
                           </div>
                         </Link>

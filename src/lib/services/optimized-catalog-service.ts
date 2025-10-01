@@ -117,13 +117,14 @@ export class OptimizedCatalogService {
   }
 
   /**
-   * 🎯 Calcule le statut d'emprunt et de réservation d'un document
+   * 🎯 Calcule le statut d'emprunt, de réservation et de consultation d'un document
    */
   private static async calculateDocumentStatus(item: any): Promise<void> {
     try {
       // Initialiser les valeurs par défaut
       item.is_borrowed = false;
       item.is_reserved = false;
+      item.is_in_consultation = false; // NOUVEAU : Consultation sur place
       item.availability_status = 'available'; // Nouveau champ pour le statut global
 
       // Déterminer le type de document et l'ID approprié
@@ -163,6 +164,28 @@ export class OptimizedCatalogService {
 
       item.is_reserved = (activeReservations[0]?.reservation_count || 0) > 0;
 
+      // 🎯 NOUVEAU : VÉRIFICATION DES CONSULTATIONS ACTIVES SUR PLACE
+      const consultationWhereClause = documentType === 'book'
+        ? `${documentField} = ? AND status = 'active'`
+        : `${documentField} = ? AND document_type = ? AND status = 'active'`;
+      const consultationParams = documentType === 'book' ? [documentId] : [documentId, documentType];
+
+      const activeConsultations = await executeQuery(`
+        SELECT COUNT(*) as consultation_count
+        FROM reading_room_consultations
+        WHERE ${consultationWhereClause}
+      `, consultationParams) as Array<{ consultation_count: number }>;
+
+      item.is_in_consultation = (activeConsultations[0]?.consultation_count || 0) > 0;
+
+      console.log(`🔍 STATUT DOCUMENT ${documentId} (${documentType}):`, {
+        title: item.title?.substring(0, 50) + '...',
+        is_borrowed: item.is_borrowed,
+        is_reserved: item.is_reserved,
+        is_in_consultation: item.is_in_consultation,
+        available_copies: item.available_copies
+      });
+
       // 🎯 CALCUL DU STATUT GLOBAL SELON LE TYPE DE DOCUMENT
       if (documentType === 'book') {
         // 📚 LIVRES : Statut basé sur les exemplaires disponibles
@@ -173,10 +196,15 @@ export class OptimizedCatalogService {
           item.availability_status = 'indisponible';
         }
       } else {
-        // 🎓 DOCUMENTS UNIQUES (thèses, mémoires, rapports) : Statut basé sur emprunt/réservation
-        // Un document unique emprunté OU réservé est INDISPONIBLE
-        if (item.is_borrowed || item.is_reserved) {
+        // 🎓 DOCUMENTS UNIQUES (thèses, mémoires, rapports) : Statut basé sur emprunt/réservation/consultation
+        // Un document unique emprunté OU réservé OU en consultation est INDISPONIBLE
+        if (item.is_borrowed || item.is_reserved || item.is_in_consultation) {
           item.availability_status = 'indisponible';
+          
+          // Log pour debug
+          if (item.is_in_consultation) {
+            console.log(`📖 DOCUMENT EN CONSULTATION: "${item.title}" - Marqué comme indisponible`);
+          }
         } else {
           item.availability_status = 'disponible';
         }
@@ -187,6 +215,7 @@ export class OptimizedCatalogService {
       // Valeurs par défaut en cas d'erreur
       item.is_borrowed = false;
       item.is_reserved = false;
+      item.is_in_consultation = false;
       item.availability_status = 'unknown';
     }
   }
@@ -444,7 +473,7 @@ export class OptimizedCatalogService {
 
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
 
-    // Requête principale optimisée avec calcul correct de la disponibilité
+    // Requête principale optimisée avec calcul correct de la disponibilité incluant les consultations
     const query = `
       SELECT
         'book' as type, 'book' as doc_type, b.id, b.title, b.subtitle,
@@ -452,7 +481,7 @@ export class OptimizedCatalogService {
         b.publisher, b.publication_year, b.publication_city, b.edition,
         b.domain, b.summary, b.abstract, b.status, b.created_at,
         b.total_copies,
-        GREATEST(0, b.total_copies - COALESCE(active_loans.loan_count, 0) - COALESCE(active_reservations.reservation_count, 0)) as available_copies,
+        GREATEST(0, b.total_copies - COALESCE(active_loans.loan_count, 0) - COALESCE(active_reservations.reservation_count, 0) - COALESCE(active_consultations.consultation_count, 0)) as available_copies,
         -- Compatibilité
         b.domain as degree_type, 'N/A' as pages, b.publication_year as defense_year,
         NULL as university, NULL as faculty
@@ -469,12 +498,18 @@ export class OptimizedCatalogService {
         WHERE status = 'active' AND document_type = 'book'
         GROUP BY book_id
       ) active_reservations ON b.id = active_reservations.book_id
+      LEFT JOIN (
+        SELECT book_id, COUNT(*) as consultation_count
+        FROM reading_room_consultations
+        WHERE status = 'active' AND document_type = 'book'
+        GROUP BY book_id
+      ) active_consultations ON b.id = active_consultations.book_id
       ${whereClause}
       ORDER BY b.created_at DESC, b.id DESC
       LIMIT ? OFFSET ?
     `;
 
-    // Requête de comptage optimisée
+    // Requête de comptage optimisée incluant les consultations
     const countQuery = `
       SELECT COUNT(*) as total 
       FROM books b
@@ -490,6 +525,12 @@ export class OptimizedCatalogService {
         WHERE status = 'active' AND document_type = 'book'
         GROUP BY book_id
       ) active_reservations ON b.id = active_reservations.book_id
+      LEFT JOIN (
+        SELECT book_id, COUNT(*) as consultation_count
+        FROM reading_room_consultations
+        WHERE status = 'active' AND document_type = 'book'
+        GROUP BY book_id
+      ) active_consultations ON b.id = active_consultations.book_id
       ${whereClause}
     `;
 
@@ -558,21 +599,62 @@ export class OptimizedCatalogService {
 
     const query = `
       SELECT
-        'these' as type, 'thesis' as doc_type, id, title, summary, abstract,
-        main_author, director, co_director, main_author as author,
-        target_degree, specialty, defense_year,
-        university, faculty, status, created_at,
-        available_copies, total_copies,
+        'these' as type, 'thesis' as doc_type, t.id, t.title, t.summary, t.abstract,
+        t.main_author, t.director, t.co_director, t.main_author as author,
+        t.target_degree, t.specialty, t.defense_year,
+        t.university, t.faculty, t.status, t.created_at,
+        t.total_copies,
+        GREATEST(0, t.total_copies - COALESCE(active_loans.loan_count, 0) - COALESCE(active_reservations.reservation_count, 0) - COALESCE(active_consultations.consultation_count, 0)) as available_copies,
         -- Compatibilité
-        COALESCE(target_degree, 'Non spécifié') as degree_type, 'N/A' as pages,
+        COALESCE(t.target_degree, 'Non spécifié') as degree_type, 'N/A' as pages,
         NULL as publisher, NULL as publication_year
-      FROM theses
+      FROM theses t
+      LEFT JOIN (
+        SELECT academic_document_id, COUNT(*) as loan_count
+        FROM loans
+        WHERE status IN ('active', 'overdue') AND document_type = 'these'
+        GROUP BY academic_document_id
+      ) active_loans ON CAST(t.id AS CHAR) = CAST(active_loans.academic_document_id AS CHAR)
+      LEFT JOIN (
+        SELECT academic_document_id, COUNT(*) as reservation_count
+        FROM reservations
+        WHERE status = 'active' AND document_type = 'these'
+        GROUP BY academic_document_id
+      ) active_reservations ON CAST(t.id AS CHAR) = CAST(active_reservations.academic_document_id AS CHAR)
+      LEFT JOIN (
+        SELECT academic_document_id, COUNT(*) as consultation_count
+        FROM reading_room_consultations
+        WHERE status = 'active' AND document_type = 'these'
+        GROUP BY academic_document_id
+      ) active_consultations ON CAST(t.id AS CHAR) = CAST(active_consultations.academic_document_id AS CHAR)
       ${whereClause}
-      ORDER BY created_at DESC, id DESC
+      ORDER BY t.created_at DESC, t.id DESC
       LIMIT ? OFFSET ?
     `;
 
-    const countQuery = `SELECT COUNT(*) as total FROM theses ${whereClause}`;
+    const countQuery = `
+      SELECT COUNT(*) as total 
+      FROM theses t
+      LEFT JOIN (
+        SELECT academic_document_id, COUNT(*) as loan_count
+        FROM loans
+        WHERE status IN ('active', 'overdue') AND document_type = 'these'
+        GROUP BY academic_document_id
+      ) active_loans ON CAST(t.id AS CHAR) = CAST(active_loans.academic_document_id AS CHAR)
+      LEFT JOIN (
+        SELECT academic_document_id, COUNT(*) as reservation_count
+        FROM reservations
+        WHERE status = 'active' AND document_type = 'these'
+        GROUP BY academic_document_id
+      ) active_reservations ON CAST(t.id AS CHAR) = CAST(active_reservations.academic_document_id AS CHAR)
+      LEFT JOIN (
+        SELECT academic_document_id, COUNT(*) as consultation_count
+        FROM reading_room_consultations
+        WHERE status = 'active' AND document_type = 'these'
+        GROUP BY academic_document_id
+      ) active_consultations ON CAST(t.id AS CHAR) = CAST(active_consultations.academic_document_id AS CHAR)
+      ${whereClause}
+    `;
 
     const [results, countResults] = await Promise.all([
       executeQuery(query, [...queryParams, limit, offset]),
@@ -639,22 +721,63 @@ export class OptimizedCatalogService {
 
     const query = `
       SELECT
-        'memoire' as type, 'memoir' as doc_type, id, title, summary, abstract,
-        main_author, supervisor, co_supervisor, main_author as author,
-        degree_level, field_of_study, specialty, defense_date,
-        university, faculty, status, created_at,
-        available_copies, total_copies,
+        'memoire' as type, 'memoir' as doc_type, m.id, m.title, m.summary, m.abstract,
+        m.main_author, m.supervisor, m.co_supervisor, m.main_author as author,
+        m.degree_level, m.field_of_study, m.specialty, m.defense_date,
+        m.university, m.faculty, m.status, m.created_at,
+        m.total_copies,
+        GREATEST(0, m.total_copies - COALESCE(active_loans.loan_count, 0) - COALESCE(active_reservations.reservation_count, 0) - COALESCE(active_consultations.consultation_count, 0)) as available_copies,
         -- Compatibilité
-        COALESCE(degree_level, 'Non spécifié') as degree_type, 'N/A' as pages,
-        YEAR(defense_date) as defense_year, supervisor as director,
+        COALESCE(m.degree_level, 'Non spécifié') as degree_type, 'N/A' as pages,
+        YEAR(m.defense_date) as defense_year, m.supervisor as director,
         NULL as publisher, NULL as publication_year
-      FROM memoires
+      FROM memoires m
+      LEFT JOIN (
+        SELECT academic_document_id, COUNT(*) as loan_count
+        FROM loans
+        WHERE status IN ('active', 'overdue') AND document_type = 'memoire'
+        GROUP BY academic_document_id
+      ) active_loans ON CAST(m.id AS CHAR) = CAST(active_loans.academic_document_id AS CHAR)
+      LEFT JOIN (
+        SELECT academic_document_id, COUNT(*) as reservation_count
+        FROM reservations
+        WHERE status = 'active' AND document_type = 'memoire'
+        GROUP BY academic_document_id
+      ) active_reservations ON CAST(m.id AS CHAR) = CAST(active_reservations.academic_document_id AS CHAR)
+      LEFT JOIN (
+        SELECT academic_document_id, COUNT(*) as consultation_count
+        FROM reading_room_consultations
+        WHERE status = 'active' AND document_type = 'memoire'
+        GROUP BY academic_document_id
+      ) active_consultations ON CAST(m.id AS CHAR) = CAST(active_consultations.academic_document_id AS CHAR)
       ${whereClause}
-      ORDER BY created_at DESC, id DESC
+      ORDER BY m.created_at DESC, m.id DESC
       LIMIT ? OFFSET ?
     `;
 
-    const countQuery = `SELECT COUNT(*) as total FROM memoires ${whereClause}`;
+    const countQuery = `
+      SELECT COUNT(*) as total 
+      FROM memoires m
+      LEFT JOIN (
+        SELECT academic_document_id, COUNT(*) as loan_count
+        FROM loans
+        WHERE status IN ('active', 'overdue') AND document_type = 'memoire'
+        GROUP BY academic_document_id
+      ) active_loans ON CAST(m.id AS CHAR) = CAST(active_loans.academic_document_id AS CHAR)
+      LEFT JOIN (
+        SELECT academic_document_id, COUNT(*) as reservation_count
+        FROM reservations
+        WHERE status = 'active' AND document_type = 'memoire'
+        GROUP BY academic_document_id
+      ) active_reservations ON CAST(m.id AS CHAR) = CAST(active_reservations.academic_document_id AS CHAR)
+      LEFT JOIN (
+        SELECT academic_document_id, COUNT(*) as consultation_count
+        FROM reading_room_consultations
+        WHERE status = 'active' AND document_type = 'memoire'
+        GROUP BY academic_document_id
+      ) active_consultations ON CAST(m.id AS CHAR) = CAST(active_consultations.academic_document_id AS CHAR)
+      ${whereClause}
+    `;
 
     const [results, countResults] = await Promise.all([
       executeQuery(query, [...queryParams, limit, offset]),
@@ -721,22 +844,63 @@ export class OptimizedCatalogService {
 
     const query = `
       SELECT
-        'rapport_stage' as type, 'report' as doc_type, id, title, summary, abstract,
-        student_name, supervisor, company_supervisor, student_name as author,
-        degree_level, field_of_study, specialty, defense_date,
-        company_name, stage_duration, university, faculty, status, created_at,
-        available_copies, total_copies,
+        'rapport_stage' as type, 'report' as doc_type, s.id, s.title, s.summary, s.abstract,
+        s.student_name, s.supervisor, s.company_supervisor, s.student_name as author,
+        s.degree_level, s.field_of_study, s.specialty, s.defense_date,
+        s.company_name, s.stage_duration, s.university, s.faculty, s.status, s.created_at,
+        s.total_copies,
+        GREATEST(0, s.total_copies - COALESCE(active_loans.loan_count, 0) - COALESCE(active_reservations.reservation_count, 0) - COALESCE(active_consultations.consultation_count, 0)) as available_copies,
         -- Compatibilité
-        COALESCE(degree_level, 'Stage') as degree_type, 'N/A' as pages,
-        YEAR(stage_end_date) as defense_year, supervisor as director,
-        company_name as university, NULL as publisher, NULL as publication_year
-      FROM stage_reports
+        COALESCE(s.degree_level, 'Stage') as degree_type, 'N/A' as pages,
+        YEAR(s.stage_end_date) as defense_year, s.supervisor as director,
+        s.company_name as university, NULL as publisher, NULL as publication_year
+      FROM stage_reports s
+      LEFT JOIN (
+        SELECT academic_document_id, COUNT(*) as loan_count
+        FROM loans
+        WHERE status IN ('active', 'overdue') AND document_type = 'rapport_stage'
+        GROUP BY academic_document_id
+      ) active_loans ON CAST(s.id AS CHAR) = CAST(active_loans.academic_document_id AS CHAR)
+      LEFT JOIN (
+        SELECT academic_document_id, COUNT(*) as reservation_count
+        FROM reservations
+        WHERE status = 'active' AND document_type = 'rapport_stage'
+        GROUP BY academic_document_id
+      ) active_reservations ON CAST(s.id AS CHAR) = CAST(active_reservations.academic_document_id AS CHAR)
+      LEFT JOIN (
+        SELECT academic_document_id, COUNT(*) as consultation_count
+        FROM reading_room_consultations
+        WHERE status = 'active' AND document_type = 'rapport_stage'
+        GROUP BY academic_document_id
+      ) active_consultations ON CAST(s.id AS CHAR) = CAST(active_consultations.academic_document_id AS CHAR)
       ${whereClause}
-      ORDER BY created_at DESC, id DESC
+      ORDER BY s.created_at DESC, s.id DESC
       LIMIT ? OFFSET ?
     `;
 
-    const countQuery = `SELECT COUNT(*) as total FROM stage_reports ${whereClause}`;
+    const countQuery = `
+      SELECT COUNT(*) as total 
+      FROM stage_reports s
+      LEFT JOIN (
+        SELECT academic_document_id, COUNT(*) as loan_count
+        FROM loans
+        WHERE status IN ('active', 'overdue') AND document_type = 'rapport_stage'
+        GROUP BY academic_document_id
+      ) active_loans ON CAST(s.id AS CHAR) = CAST(active_loans.academic_document_id AS CHAR)
+      LEFT JOIN (
+        SELECT academic_document_id, COUNT(*) as reservation_count
+        FROM reservations
+        WHERE status = 'active' AND document_type = 'rapport_stage'
+        GROUP BY academic_document_id
+      ) active_reservations ON CAST(s.id AS CHAR) = CAST(active_reservations.academic_document_id AS CHAR)
+      LEFT JOIN (
+        SELECT academic_document_id, COUNT(*) as consultation_count
+        FROM reading_room_consultations
+        WHERE status = 'active' AND document_type = 'rapport_stage'
+        GROUP BY academic_document_id
+      ) active_consultations ON CAST(s.id AS CHAR) = CAST(active_consultations.academic_document_id AS CHAR)
+      ${whereClause}
+    `;
 
     const [results, countResults] = await Promise.all([
       executeQuery(query, [...queryParams, limit, offset]),

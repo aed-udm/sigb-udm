@@ -801,7 +801,7 @@ export class ActiveDirectoryService {
 
     const secret = process.env.JWT_SECRET || 'your-secret-key';
     const options = {
-      expiresIn: '24h' as const,
+      expiresIn: '4h' as const, // Réduit de 24h à 4h pour plus de sécurité
       issuer: 'bibliotheque-udm'
     };
 

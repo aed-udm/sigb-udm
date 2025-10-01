@@ -46,6 +46,28 @@ body {
   font-family: var(--font-mono), var(--font-mono-fallback);
 }
 
+/* Classes utilitaires responsive pour le texte */
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
 /* Classes utilitaires pour forcer les polices système */
 .font-system {
   font-family: var(--font-sans-fallback) !important;

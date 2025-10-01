@@ -3,9 +3,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from 'framer-motion';
-import { ArrowLeft, Edit, Trash2, BookOpen, User, Building, Calendar, DollarSign, Package, FileText, Download, Tag, School, GraduationCap, Briefcase, MapPin } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, BookOpen, User, Building, Calendar, Package, FileText, Download, Tag, School, GraduationCap, Briefcase, MapPin } from "lucide-react";
 import { safeKeywordsToArray } from "@/lib/utils/keywords-utils";
 import Link from "next/link";
+import { FcfaIcon } from "@/components/ui/fcfa-icon";
 
 import { Button } from "@/components/ui/button";
 import { DarkModeButton } from "@/components/ui/dark-mode-button";

@@ -153,7 +153,7 @@ export function PDFAValidator({
       <div className="space-y-4">
         {label && (
           <Label className="text-sm font-medium">
-            {label} {required && <span className="text-red-500">*</span>}
+            {label} {required && <span className="text-gray-500">*</span>}
           </Label>
         )}
 
@@ -195,8 +195,8 @@ export function PDFAValidator({
         {dicamesCompliance && (
           <div className="bg-green-50 dark:bg-green-800/90 p-3 rounded-lg">
             <div className="flex items-start space-x-2">
-              <Shield className="h-4 w-4 text-purple-600 mt-0.5" />
-              <div className="text-xs text-purple-700 dark:text-gray-300">
+              <Shield className="h-4 w-4 text-green-600 mt-0.5" />
+              <div className="text-xs text-green-700 dark:text-gray-300">
                 <p className="font-medium">Conformité DICAMES requise</p>
                 <p>Le document sera validé selon les standards d'archivage CAMES/DICAMES</p>
               </div>
@@ -245,7 +245,7 @@ export function PDFAValidator({
               variant="outline"
               size="sm"
               onClick={removeFile}
-              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+              className="text-gray-600 hover:text-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900/20"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -295,17 +295,17 @@ export function PDFAValidator({
           <div className={`p-4 rounded-lg border ${
             validationResult.isValid 
               ? 'bg-green-50 border-green-200 dark:bg-green-800/90 dark:border-green-800'
-              : 'bg-red-50 border-red-200 dark:bg-red-800/90 dark:border-red-800'
+              : 'bg-gray-50 border-gray-200 dark:bg-gray-800/90 dark:border-gray-800'
           }`}>
             <div className="flex items-center space-x-2">
               {validationResult.isValid ? (
                 <CheckCircle className="h-5 w-5 text-green-600" />
               ) : (
-                <XCircle className="h-5 w-5 text-red-600" />
+                <XCircle className="h-5 w-5 text-gray-600" />
               )}
               <div>
                 <h3 className={`font-semibold ${
-                  validationResult.isValid ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'
+                  validationResult.isValid ? 'text-green-800 dark:text-green-200' : 'text-gray-800 dark:text-gray-200'
                 }`}>
                   {validationResult.isValid ? 'Fichier conforme PDF/A' : 'Fichier non conforme PDF/A'}
                 </h3>
@@ -326,16 +326,16 @@ export function PDFAValidator({
           {/* Erreurs */}
           {validationResult.errors.length > 0 && (
             <div className="space-y-2">
-              <h4 className="font-medium text-red-800 dark:text-red-200 flex items-center">
+              <h4 className="font-medium text-gray-800 dark:text-gray-200 flex items-center">
                 <XCircle className="h-4 w-4 mr-2" />
                 Erreurs ({validationResult.errors.length})
               </h4>
               <ul className="space-y-1">
                 {validationResult.errors.map((error, index) => (
-                  <div key={index} className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                    <div className="font-medium text-red-800 dark:text-red-200">{error.code}</div>
-                    <div className="text-red-700 dark:text-red-300">{error.message}</div>
-                    <div className="text-sm text-red-600 dark:text-red-400 mt-1">{error.suggestion}</div>
+                  <div key={index} className="p-3 bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-800 rounded-lg">
+                    <div className="font-medium text-gray-800 dark:text-gray-200">{error.code}</div>
+                    <div className="text-gray-700 dark:text-gray-300">{error.message}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">{error.suggestion}</div>
                   </div>
                 ))}
               </ul>
@@ -345,18 +345,18 @@ export function PDFAValidator({
           {/* Avertissements */}
           {validationResult.warnings.length > 0 && (
             <div className="space-y-2">
-              <h4 className="font-medium text-orange-800 dark:text-gray-200 flex items-center">
+              <h4 className="font-medium text-gray-800 dark:text-gray-200 flex items-center">
                 <AlertTriangle className="h-4 w-4 mr-2" />
                 Avertissements ({validationResult.warnings.length})
               </h4>
               <ul className="space-y-1">
                 {validationResult.warnings.map((warning, index) => (
-                  <li key={index} className="text-sm text-orange-700 dark:text-gray-300 flex items-start">
-                    <span className="w-2 h-2 bg-orange-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                  <li key={index} className="text-sm text-gray-700 dark:text-gray-300 flex items-start">
+                    <span className="w-2 h-2 bg-gray-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
                     <div>
                       <div className="font-medium">{warning.code}</div>
                       <div>{warning.message}</div>
-                      <div className="text-xs text-orange-600 dark:text-orange-400 mt-1">{warning.recommendation}</div>
+                      <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">{warning.recommendation}</div>
                     </div>
                   </li>
                 ))}

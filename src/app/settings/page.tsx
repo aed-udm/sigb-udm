@@ -26,13 +26,13 @@ import {
   AlertTriangle, 
   CheckCircle, 
   Info, 
-  Briefcase, 
-  DollarSign,
+  Briefcase,
   Check,
   X,
   Link,
   UserCheck
 } from "lucide-react";
+import { FcfaIcon } from "@/components/ui/fcfa-icon";
 
 // Types pour les données
 interface SystemStats {
@@ -465,7 +465,7 @@ export default function SettingsPage() {
                   className="bg-gray-600 hover:bg-gray-700 w-full sm:w-auto flex-shrink-0"
                   size="sm"
                 >
-                  <DollarSign className="h-4 w-4 mr-2" />
+                  <FcfaIcon className="h-4 w-4 mr-2" />
                   <span className="truncate">Configurer les Pénalités</span>
                 </Button>
               </div>

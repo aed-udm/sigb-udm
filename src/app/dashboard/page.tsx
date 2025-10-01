@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { NotificationBadge } from "@/components/ui/notification-badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import ProtectedLayout from "@/components/layout/protected-layout";
 import { useToast } from "@/hooks/use-toast";
@@ -210,50 +212,64 @@ export default function Dashboard() {
   return (
     <ProtectedLayout>
       <div className="relative min-h-screen bg-gradient-to-br from-green-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-green-900">
-        {/* Header professionnel RESPONSIVE */}
+        {/* Header professionnel uniforme avec glassmorphism */}
         <motion.div
-          className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl shadow-lg border-b border-gray-200/50 dark:border-gray-700/50"
-          initial={{ y: 20, opacity: 0 }}
+          className="glass-nav shadow-lg border-b border-white/20 dark:border-gray-700/20 relative overflow-hidden bg-white/95 dark:bg-gray-900/95 backdrop-blur-md"
+          initial={{ y: -50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6 }}
         >
-          <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6 lg:py-8">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <motion.div
-                initial={{ opacity: 0, x: -30 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-              >
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-slate-800 to-green-600 dark:from-slate-200 dark:to-green-400 bg-clip-text text-transparent flex items-center">
-                  <BarChart3 className="mr-2 sm:mr-4 h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 text-green-600 flex-shrink-0" />
-                  <span className="truncate">Tableau de bord</span>
-                </h1>
-                <p className="text-sm sm:text-base lg:text-lg text-gray-600 dark:text-gray-500 dark:text-gray-300mt-1 sm:mt-2 font-medium">
-                  Vue d'ensemble de votre bibliothèque
-                </p>
-              </motion.div>
+          {/* Effet glassmorphism background */}
+          <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 via-transparent to-gray-500/5" />
+
+          <div className="relative z-10 container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <BarChart3 className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
+                </motion.div>
+                <div>
+                  <motion.h1
+                    className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.1 }}
+                  >
+                    Tableau de bord
+                  </motion.h1>
+                  <motion.p
+                    className="text-sm sm:text-base text-gray-600 dark:text-gray-300 mt-1"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.2 }}
+                  >
+                    Vue d'ensemble de votre bibliothèque
+                  </motion.p>
+                </div>
+              </div>
 
               <motion.div
-                className="flex items-center gap-3"
-                initial={{ opacity: 0, x: 30 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6, delay: 0.4 }}
+                className="w-full sm:w-auto flex items-center gap-3"
+                initial={{ x: 20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ duration: 0.4, delay: 0.3 }}
               >
-                <div className="text-xs sm:text-sm text-gray-900 dark:text-white bg-gray-100/90 dark:bg-gray-700/90 px-3 sm:px-4 py-2 rounded-xl backdrop-blur-sm border border-gray-300/70 dark:border-gray-500/70 update-info-dark">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                    <span className="hidden sm:inline">Dernière mise à jour: </span>
-                    <span className="sm:hidden">MAJ: </span>
-                    <span className="truncate">{new Date().toLocaleString('fr-FR', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}</span>
-                  </div>
+                <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-800 rounded-full border text-xs font-medium backdrop-blur-sm">
+                  <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span className="hidden sm:inline">Dernière mise à jour: </span>
+                  <span className="sm:hidden">MAJ: </span>
+                  <span className="truncate">{new Date().toLocaleString('fr-FR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}</span>
                 </div>
 
-                {/* Bouton de rafraîchissement */}
                 <Button
                   onClick={fetchData}
                   variant="outline"

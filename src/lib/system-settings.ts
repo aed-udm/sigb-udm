@@ -28,7 +28,7 @@ export async function getSystemSetting(key: string): Promise<any> {
   
   try {
     const result = await executeQuery(
-      'SELECT value, type FROM system_settings WHERE setting_key = ?',
+      'SELECT setting_value as value, setting_type as type FROM system_settings WHERE setting_key = ?',
       [key]
     ) as any[];
 
@@ -54,7 +54,7 @@ export async function getSystemSettingsByCategory(category: string): Promise<Rec
   
   try {
     const results = await executeQuery(
-      'SELECT setting_key, value, type FROM system_settings WHERE category = ?',
+      'SELECT setting_key, setting_value as value, setting_type as type FROM system_settings WHERE category = ?',
       [category]
     ) as any[];
 
@@ -77,7 +77,7 @@ export async function getSystemSettingsByCategory(category: string): Promise<Rec
 export async function getAllSystemSettings(): Promise<Record<string, Record<string, any>>> {
   try {
     const results = await executeQuery(
-      'SELECT setting_key, value, type, category FROM system_settings'
+      'SELECT setting_key, setting_value as value, setting_type as type, category FROM system_settings'
     ) as any[];
 
     const settings: Record<string, Record<string, any>> = {};
@@ -104,12 +104,12 @@ export async function updateSystemSetting(key: string, value: any, type: string,
     const stringValue = stringifySettingValue(value, type);
     
     await executeQuery(
-      `INSERT INTO system_settings (setting_key, value, type, category, updated_at) 
-       VALUES (?, ?, ?, ?, NOW()) 
-       ON DUPLICATE KEY UPDATE 
-       value = VALUES(value), 
-       type = VALUES(type), 
-       category = VALUES(category), 
+      `INSERT INTO system_settings (setting_key, setting_value, setting_type, category, updated_at)
+       VALUES (?, ?, ?, ?, NOW())
+       ON DUPLICATE KEY UPDATE
+       setting_value = VALUES(setting_value),
+       setting_type = VALUES(setting_type),
+       category = VALUES(category),
        updated_at = NOW()`,
       [key, stringValue, type, category]
     );

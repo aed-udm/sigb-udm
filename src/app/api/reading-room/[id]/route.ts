@@ -1,48 +1,146 @@
 /**
- * API pour la gestion individuelle des consultations sur place - SIGB UdM
+ * API pour la gestion d'une consultation spécifique - SIGB UdM
+ * Permet de terminer ou annuler une consultation sur place
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { executeQuery } from '@/lib/mysql';
+import { executeQuery, executeTransaction } from '@/lib/mysql';
 
-// GET /api/reading-room/[id] - Récupérer une consultation spécifique
+// PUT /api/reading-room/[id] - Terminer ou annuler une consultation
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: consultationId } = await params;
+    const body = await request.json();
+    const { action } = body;
+
+    if (!consultationId) {
+      return NextResponse.json(
+        { error: { code: 'MISSING_CONSULTATION_ID', message: 'ID de consultation requis' } },
+        { status: 400 }
+      );
+    }
+
+    // Requête simplifiée sans JOIN pour éviter les problèmes de collation
+    const consultations = await executeQuery(
+      `SELECT rc.*, u.full_name as user_name
+       FROM reading_room_consultations rc
+       LEFT JOIN users u ON rc.user_id = u.id
+       WHERE rc.id = ? AND rc.status = 'active'`,
+      [consultationId]
+    ) as Array<{
+      id: string;
+      user_id: string;
+      book_id?: string;
+      academic_document_id?: string;
+      document_type: string;
+      user_name: string;
+    }>;
+
+    if (consultations.length === 0) {
+      return NextResponse.json(
+        { error: { code: 'CONSULTATION_NOT_FOUND', message: 'Consultation active non trouvée' } },
+        { status: 404 }
+      );
+    }
+
+    const consultation = consultations[0];
+
+    if (action === 'complete' || action === 'cancel') {
+      // 🎯 TRANSACTION POUR TERMINER LA CONSULTATION ET REMETTRE DISPONIBLE
+      const currentTime = new Date().toTimeString().split(' ')[0];
+      const newStatus = action === 'complete' ? 'completed' : 'cancelled';
+      
+      const queries = [
+        // 1. Marquer la consultation comme terminée/annulée
+        {
+          query: `UPDATE reading_room_consultations 
+                  SET status = ?, end_time = ?, updated_at = CURRENT_TIMESTAMP 
+                  WHERE id = ?`,
+          params: [newStatus, action === 'complete' ? currentTime : null, consultationId]
+        }
+      ];
+
+      // 2. Remettre le document disponible selon son type
+      if (consultation.document_type === 'book' && consultation.book_id) {
+        queries.push({
+          query: 'UPDATE books SET available_copies = available_copies + 1 WHERE id = ?',
+          params: [consultation.book_id]
+        });
+      } else if (consultation.academic_document_id) {
+        let tableName = '';
+        switch (consultation.document_type) {
+          case 'these': tableName = 'theses'; break;
+          case 'memoire': tableName = 'memoires'; break;
+          case 'rapport_stage': tableName = 'stage_reports'; break;
+        }
+        
+        if (tableName) {
+          queries.push({
+            query: `UPDATE ${tableName} SET available_copies = available_copies + 1 WHERE id = ?`,
+            params: [consultation.academic_document_id]
+          });
+        }
+      }
+
+      // Exécuter la transaction
+      await executeTransaction(queries);
+
+      const actionText = action === 'complete' ? 'terminée' : 'annulée';
+      console.log(`✅ CONSULTATION ${actionText.toUpperCase()}: Document par ${consultation.user_name} - Document remis disponible`);
+
+      return NextResponse.json({
+        success: true,
+        message: `Consultation ${actionText}. Document maintenant disponible.`,
+        data: { 
+          consultation_id: consultationId, 
+          status: newStatus,
+          user_name: consultation.user_name
+        }
+      });
+
+    } else {
+      return NextResponse.json(
+        { error: { code: 'INVALID_ACTION', message: 'Action invalide. Utilisez "complete" ou "cancel"' } },
+        { status: 400 }
+      );
+    }
+
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de la consultation:', error);
+    return NextResponse.json(
+      { 
+        error: { 
+          code: 'UPDATE_ERROR', 
+          message: 'Erreur lors de la mise à jour de la consultation',
+          details: error instanceof Error ? error.message : 'Erreur inconnue'
+        } 
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// GET /api/reading-room/[id] - Récupérer les détails d'une consultation
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const { id: consultationId } = await params;
 
     const consultations = await executeQuery(
       `SELECT 
         rc.*,
         u.full_name as user_name,
         u.email as user_email,
-        u.matricule as user_barcode,
-        CASE 
-          WHEN rc.document_type = 'book' THEN b.title
-          WHEN rc.document_type = 'these' THEN t.title
-          WHEN rc.document_type = 'memoire' THEN m.title
-          WHEN rc.document_type = 'rapport_stage' THEN sr.title
-        END as document_title,
-        CASE 
-          WHEN rc.document_type = 'book' THEN b.main_author
-          WHEN rc.document_type = 'these' THEN t.main_author
-          WHEN rc.document_type = 'memoire' THEN m.student_name
-          WHEN rc.document_type = 'rapport_stage' THEN sr.student_name
-        END as document_author,
-        CASE 
-          WHEN rc.document_type = 'book' THEN b.mfn
-          ELSE NULL
-        END as document_mfn
+        u.matricule as user_barcode
       FROM reading_room_consultations rc
       LEFT JOIN users u ON rc.user_id = u.id
-      LEFT JOIN books b ON rc.book_id = b.id AND rc.document_type = 'book'
-      LEFT JOIN theses t ON rc.academic_document_id = t.id AND rc.document_type = 'these'
-      LEFT JOIN memoires m ON rc.academic_document_id = m.id AND rc.document_type = 'memoire'
-      LEFT JOIN stage_reports sr ON rc.academic_document_id = sr.id AND rc.document_type = 'rapport_stage'
       WHERE rc.id = ?`,
-      [id]
+      [consultationId]
     );
 
     if (consultations.length === 0) {
@@ -64,188 +162,6 @@ export async function GET(
         error: { 
           code: 'FETCH_ERROR', 
           message: 'Erreur lors de la récupération de la consultation',
-          details: error instanceof Error ? error.message : 'Erreur inconnue'
-        } 
-      },
-      { status: 500 }
-    );
-  }
-}
-
-// PUT /api/reading-room/[id] - Mettre à jour une consultation (terminer, annuler, etc.)
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const body = await request.json();
-    const { action, notes, reading_location } = body;
-
-    // Vérifier que la consultation existe
-    const consultations = await executeQuery(
-      'SELECT * FROM reading_room_consultations WHERE id = ?',
-      [id]
-    ) as Array<any>;
-
-    if (consultations.length === 0) {
-      return NextResponse.json(
-        { error: { code: 'CONSULTATION_NOT_FOUND', message: 'Consultation non trouvée' } },
-        { status: 404 }
-      );
-    }
-
-    const consultation = consultations[0];
-
-    if (action === 'complete') {
-      // Terminer la consultation
-      if (consultation.status !== 'active') {
-        return NextResponse.json(
-          { error: { code: 'CONSULTATION_NOT_ACTIVE', message: 'La consultation n\'est pas active' } },
-          { status: 400 }
-        );
-      }
-
-      const currentTime = new Date().toTimeString().split(' ')[0];
-
-      await executeQuery(
-        `UPDATE reading_room_consultations 
-         SET status = 'completed', end_time = ?, notes = COALESCE(?, notes)
-         WHERE id = ?`,
-        [currentTime, notes || null, id]
-      );
-
-      // Calculer la durée de consultation
-      const startTime = new Date(`1970-01-01T${consultation.start_time}`);
-      const endTime = new Date(`1970-01-01T${currentTime}`);
-      const durationMinutes = Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60));
-
-      return NextResponse.json({
-        success: true,
-        message: 'Consultation terminée avec succès',
-        data: {
-          consultation_id: id,
-          duration_minutes: durationMinutes,
-          end_time: currentTime
-        }
-      });
-
-    } else if (action === 'cancel') {
-      // Annuler la consultation
-      if (consultation.status !== 'active') {
-        return NextResponse.json(
-          { error: { code: 'CONSULTATION_NOT_ACTIVE', message: 'La consultation n\'est pas active' } },
-          { status: 400 }
-        );
-      }
-
-      await executeQuery(
-        `UPDATE reading_room_consultations 
-         SET status = 'cancelled', notes = COALESCE(?, notes)
-         WHERE id = ?`,
-        [notes || null, id]
-      );
-
-      return NextResponse.json({
-        success: true,
-        message: 'Consultation annulée avec succès'
-      });
-
-    } else if (action === 'update') {
-      // Mettre à jour les informations de la consultation
-      const updateFields = [];
-      const updateParams = [];
-
-      if (notes !== undefined) {
-        updateFields.push('notes = ?');
-        updateParams.push(notes);
-      }
-
-      if (reading_location !== undefined) {
-        updateFields.push('reading_location = ?');
-        updateParams.push(reading_location);
-      }
-
-      if (updateFields.length === 0) {
-        return NextResponse.json(
-          { error: { code: 'NO_UPDATES', message: 'Aucune mise à jour fournie' } },
-          { status: 400 }
-        );
-      }
-
-      updateParams.push(id);
-
-      await executeQuery(
-        `UPDATE reading_room_consultations SET ${updateFields.join(', ')} WHERE id = ?`,
-        updateParams
-      );
-
-      return NextResponse.json({
-        success: true,
-        message: 'Consultation mise à jour avec succès'
-      });
-
-    } else {
-      return NextResponse.json(
-        { error: { code: 'INVALID_ACTION', message: 'Action invalide' } },
-        { status: 400 }
-      );
-    }
-
-  } catch (error) {
-    console.error('Erreur lors de la mise à jour de la consultation:', error);
-    return NextResponse.json(
-      { 
-        error: { 
-          code: 'UPDATE_ERROR', 
-          message: 'Erreur lors de la mise à jour de la consultation',
-          details: error instanceof Error ? error.message : 'Erreur inconnue'
-        } 
-      },
-      { status: 500 }
-    );
-  }
-}
-
-// DELETE /api/reading-room/[id] - Supprimer une consultation
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-
-    // Vérifier que la consultation existe
-    const consultations = await executeQuery(
-      'SELECT * FROM reading_room_consultations WHERE id = ?',
-      [id]
-    );
-
-    if (consultations.length === 0) {
-      return NextResponse.json(
-        { error: { code: 'CONSULTATION_NOT_FOUND', message: 'Consultation non trouvée' } },
-        { status: 404 }
-      );
-    }
-
-    // Supprimer la consultation
-    await executeQuery(
-      'DELETE FROM reading_room_consultations WHERE id = ?',
-      [id]
-    );
-
-    return NextResponse.json({
-      success: true,
-      message: 'Consultation supprimée avec succès'
-    });
-
-  } catch (error) {
-    console.error('Erreur lors de la suppression de la consultation:', error);
-    return NextResponse.json(
-      { 
-        error: { 
-          code: 'DELETE_ERROR', 
-          message: 'Erreur lors de la suppression de la consultation',
           details: error instanceof Error ? error.message : 'Erreur inconnue'
         } 
       },

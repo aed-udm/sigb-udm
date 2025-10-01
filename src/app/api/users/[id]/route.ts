@@ -11,7 +11,7 @@ const usersConfig = {
   schema: userSchema,
   getByIdFunction: getUserById,
   searchableFields: ['full_name', 'email', 'barcode'],
-  updateableFields: ['full_name', 'email', 'phone', 'address', 'max_loans', 'max_reservations']
+  updateableFields: ['full_name', 'email', 'phone', 'address', 'max_loans', 'max_reservations', 'is_active', 'account_status', 'matricule', 'faculty', 'user_category', 'study_level', 'department', 'institution']
 };
 
 // Handlers CRUD génériques

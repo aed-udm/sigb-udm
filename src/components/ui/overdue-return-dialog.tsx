@@ -10,8 +10,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Clock, DollarSign, User, BookOpen } from "lucide-react";
+import { AlertTriangle, Clock, User, BookOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { FcfaIcon } from "./fcfa-icon";
 
 interface OverdueReturnDialogProps {
   isOpen: boolean;
@@ -83,7 +84,7 @@ export function OverdueReturnDialog({
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-red-500" />
+                <FcfaIcon className="h-4 w-4 text-red-500" />
                 <span className="font-medium text-sm text-red-700 dark:text-red-300">
                   Pénalité estimée
                 </span>
