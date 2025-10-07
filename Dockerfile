@@ -26,9 +26,10 @@ RUN apk add --no-cache \
     wget \
     openssl \
     ca-certificates \
-    dnsutils \
+    bind-tools \
     net-tools \
-    ftp
+    inetutils-ftp
+
 
 # Définir le répertoire de travail
 WORKDIR /app
