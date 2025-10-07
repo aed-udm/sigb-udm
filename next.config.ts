@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Configuration pour Docker standalone build
+  output: 'standalone',
+
   // Configuration ultra-optimisée pour développement rapide
   experimental: {
     // Optimisations critiques pour performance

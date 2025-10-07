@@ -42,8 +42,8 @@ FROM base AS deps
 # Copier les fichiers de configuration des packages
 COPY package.json package-lock.json* ./
 
-# Installer les dépendances avec optimisations
-RUN npm ci --only=production --ignore-scripts && \
+# Installer TOUTES les dépendances (production + dev) pour le build
+RUN npm ci --ignore-scripts && \
     npm cache clean --force
 
 # ================================

@@ -51,13 +51,13 @@ coverage/
 
 # Documentation de développement
 docs/
-*.md
-!README.md
+# *.md - NE PAS EXCLURE pour le build
+# !README.md
 
-# Scripts de développement
-scripts/test*
-scripts/debug*
-scripts/dev*
+# Scripts de développement (garder tous les scripts pour le build)
+# scripts/test*
+# scripts/debug*
+# scripts/dev*
 
 # Fichiers de configuration IDE
 .vscode/
@@ -117,20 +117,18 @@ NETTOYAGE_*
 vercel.json
 netlify.toml
 
-# Fichiers de linting
-.eslintrc*
-.prettierrc*
+# Fichiers de linting (GARDER pour le build)
+# .eslintrc*
+# .prettierrc*
 
-# Fichiers TypeScript de configuration
-tsconfig.json
-!tsconfig.json
+# Fichiers TypeScript de configuration (GARDER pour le build)
+# tsconfig.json
 
-# Fichiers de configuration Tailwind
-tailwind.config.*
-!tailwind.config.ts
+# Fichiers de configuration Tailwind (GARDER pour le build)
+# tailwind.config.*
 
-# Fichiers de configuration PostCSS
-postcss.config.*
+# Fichiers de configuration PostCSS (GARDER pour le build)
+# postcss.config.*
 
-# Fichiers de configuration ESLint
-eslint.config.*
+# Fichiers de configuration ESLint (GARDER pour le build)
+# eslint.config.*
